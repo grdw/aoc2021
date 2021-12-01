@@ -10,6 +10,7 @@ fn main() {
         .collect();
 
     println!("{}", depth_increases(&depths));
+    println!("{}", sliding_depth_increases(&depths));
 }
 
 fn depth_increases(depths: &Vec<u16>) -> usize {
@@ -25,3 +26,24 @@ fn test_depth_increases() {
         7
     );
 }
+
+fn sliding_depth_increases(depths: &Vec<u16>) -> usize {
+    let group_size = 3;
+
+    (0..depths.len() - group_size)
+        .filter(|&i| {
+            let sum: u16 = depths[i..i + 3].iter().sum();
+            let next_sum: u16 = depths[i + 1..i + 4].iter().sum();
+
+            next_sum > sum
+        }).count()
+}
+
+#[test]
+fn test_sliding_depth_increases() {
+    assert_eq!(
+        sliding_depth_increases(&vec![199, 200, 208, 210, 200, 207, 240, 269, 260, 263]),
+        5
+    );
+}
+
