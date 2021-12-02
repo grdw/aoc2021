@@ -15,20 +15,26 @@ fn main() {
 }
 
 fn move_submarine(coords: &Vec<&str>) -> u32 {
-    let mut start = (0, 0);
+    let mut depth = 0;
+    let mut position = 0;
+    let mut aim = 0;
 
     for coord in coords {
         let d: Vec<&str> = coord.split(" ").collect();
         let x: u32 = d[1].parse().unwrap();
+
         match d[0] {
-            "forward" => start.0 += x,
-            "down" => start.1 += x,
-            "up" => start.1 -= x,
+            "forward" => {
+                position += x;
+                depth += aim * x;
+            },
+            "down" => aim += x,
+            "up" => aim -= x,
             _ => panic!("invalid direction")
         }
     }
 
-    start.0 * start.1
+    depth * position
 }
 
 #[test]
@@ -44,5 +50,5 @@ fn test_movement() {
         ]
     );
 
-    assert_eq!(final_pos, 150)
+    assert_eq!(final_pos, 900)
 }
