@@ -96,12 +96,12 @@ fn binary_filter(binaries: &Vec<&str>, search: &[char]) -> u32 {
 
         bins.retain(|&bin| {
             let bit = if total_ones * 10 >= threshold {
-                search[1]
+                1
             } else {
-                search[0]
+                0
             };
 
-            bin.chars().nth(j) == Some(bit)
+            bin.chars().nth(j) == Some(search[bit])
         });
 
         j += 1
@@ -132,4 +132,3 @@ fn test_life_support_rating() {
         230
     );
 }
-
