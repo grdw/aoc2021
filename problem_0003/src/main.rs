@@ -87,11 +87,15 @@ fn binary_filter(binaries: &Vec<&str>, search: &[char]) -> u32 {
     let mut j = 0;
 
     while bins.len() > 1 {
-        let total_ones = totals(&bins);
+        let total_ones = bins
+            .iter()
+            .filter(|&&b| b.chars().nth(j) == Some('1'))
+            .count();
+
         let threshold = (bins.len() as f32 * 5.0) as usize;
 
         bins.retain(|&bin| {
-            let bit = if total_ones[j] * 10 >= threshold {
+            let bit = if total_ones * 10 >= threshold {
                 search[1]
             } else {
                 search[0]
