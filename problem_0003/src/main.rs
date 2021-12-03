@@ -17,7 +17,7 @@ fn main() {
 
 fn binary_diagnostic(binaries: &Vec<&str>) -> u32 {
     let threshold = binaries.len() / 2;
-    let total_ones = totals(binaries, '1');
+    let total_ones = totals(binaries);
 
     let mut gamma_rate = 0;
     let mut epsilon_rate = 0;
@@ -35,7 +35,7 @@ fn binary_diagnostic(binaries: &Vec<&str>) -> u32 {
     gamma_rate * epsilon_rate
 }
 
-fn totals(binaries: &Vec<&str>, search: char) -> Vec<usize> {
+fn totals(binaries: &Vec<&str>) -> Vec<usize> {
     let len = binaries[0].len();
     let mut total_ones = vec![0; len];
 
@@ -43,7 +43,7 @@ fn totals(binaries: &Vec<&str>, search: char) -> Vec<usize> {
         for i in 0..len {
             let c = bin.chars().nth(i);
 
-            if c == Some(search) {
+            if c == Some('1') {
                 total_ones[i] += 1;
             }
         }
@@ -76,46 +76,34 @@ fn test_binary_diagnostic() {
 }
 
 fn life_support_rating(binaries: &Vec<&str>) -> u32 {
-    let oxygen_rating = binary_filter(&binaries, '1');
-    let co2_scrubber_rating = binary_filter(&binaries, '0');
+    let oxygen_rating = binary_filter(&binaries, &['0', '1']);
+    let co2_scrubber_rating = binary_filter(&binaries, &['1', '0']);
 
     oxygen_rating * co2_scrubber_rating
 }
 
-fn binary_filter(binaries: &Vec<&str>, search: char) -> u32 {
-    let mut filter = binaries.clone();
+fn binary_filter(binaries: &Vec<&str>, search: &[char]) -> u32 {
+    let mut bins = binaries.clone();
+    let mut j = 0;
 
-    let reverse = if search >= '1' {
-                      '0'
-                  } else {
-                      '1'
-                  };
+    while bins.len() > 1 {
+        let total_ones = totals(&bins);
+        let threshold = (bins.len() as f32 * 5.0) as usize;
 
-    for i in 0..binaries[0].len() {
-        let threshold = ((filter.len() as f32) * 5.0) as usize;
-        let total_ones = totals(&filter, '1');
+        bins.retain(|&bin| {
+            let bit = if total_ones[j] * 10 >= threshold {
+                search[1]
+            } else {
+                search[0]
+            };
 
-        filter = filter
-            .iter()
-            .filter(|&&n| {
-                let total = total_ones[i] * 10;
-                let bit = if total >= threshold {
-                              search
-                          } else {
-                              reverse
-                          };
+            bin.chars().nth(j) == Some(bit)
+        });
 
-                n.chars().nth(i) == Some(bit)
-            })
-            .map(|n| *n)
-            .collect();
-
-        if filter.len() == 1 {
-            break;
-        }
+        j += 1
     }
 
-    u32::from_str_radix(filter[0], 2).unwrap()
+    u32::from_str_radix(bins[0], 2).unwrap()
 }
 
 #[test]
