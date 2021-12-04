@@ -7,20 +7,33 @@ fn main() {
     let bingo_cards_string = fs::read_to_string("bingo_cards")
                                 .unwrap_or("".to_string());
 
-    let bingo_cards: Vec<&str> = bingo_cards_string
+    let mut bingo_cards: Vec<BingoCard> = bingo_cards_string
         .split("\n\n")
+        .map(|n| BingoCard::from_str(n))
         .collect();
 
-    let mut bingo_numbers: Vec<u16> = bingo_numbers_string
+    let mut bingo_numbers: Vec<u8> = bingo_numbers_string
         .split(",")
-        .map(|n| n.parse::<u16>().unwrap_or(0))
+        .map(|n| n.parse::<u8>().unwrap_or(0))
         .collect();
 
     // Last digit is a 0 and should be removed
     bingo_numbers.pop();
 
-    //println!("{:?}", bingo_numbers);
-    println!("{:?}", bingo_cards[0]);
+    'outer: for bingo_number in &bingo_numbers {
+        for bingo_card in &mut bingo_cards {
+            bingo_card.cross(*bingo_number);
+
+            if bingo_card.is_bingo() {
+                println!(
+                    "{:?}",
+                    bingo_card.sum_unmarked() * *bingo_number as u16
+                );
+
+                break 'outer;
+            }
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -32,6 +45,7 @@ impl Square {
     }
 }
 
+#[derive(Debug)]
 struct BingoCard {
     points: Vec<Vec<Square>>
 }
@@ -39,12 +53,13 @@ struct BingoCard {
 impl BingoCard {
     fn from_str(card: &str) -> BingoCard {
         let points: Vec<Vec<Square>> = card
-            .split("\n")
-            .map(|row| {
-                row.split(" ").map(|n| {
-                    Square(n.parse::<u8>().unwrap(), false)
-                }).collect()
-            })
+            .split_terminator("\n")
+            .map(|row|
+                row
+                    .split(" ")
+                    .map(|n| Square(n.parse::<u8>().unwrap_or(0), false))
+                    .collect()
+            )
             .collect();
 
         BingoCard { points: points }
@@ -83,6 +98,20 @@ impl BingoCard {
         }
 
         is_bingo
+    }
+
+    pub fn sum_unmarked(&self) -> u16 {
+        let mut total_sum = 0;
+
+        for row in &self.points {
+            for square in row {
+                if !square.1 {
+                    total_sum += square.0 as u16
+                }
+            }
+        }
+
+        total_sum
     }
 }
 
@@ -155,5 +184,6 @@ fn test_bingo_card_is_bingo_vertical() {
 
      bingo_card.cross(65);
 
-    assert!(bingo_card.is_bingo())
+    assert!(bingo_card.is_bingo());
+    assert_eq!(bingo_card.sum_unmarked(), 1017);
 }
