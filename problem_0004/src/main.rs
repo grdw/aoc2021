@@ -7,7 +7,7 @@ fn main() {
     let bingo_cards_string = fs::read_to_string("bingo_cards")
                                 .unwrap_or("".to_string());
 
-    let mut bingo_cards: Vec<BingoCard> = bingo_cards_string
+    let bingo_cards: Vec<BingoCard> = bingo_cards_string
         .split("\n\n")
         .map(|n| BingoCard::from_str(n))
         .collect();
@@ -20,23 +20,58 @@ fn main() {
     // Last digit is a 0 and should be removed
     bingo_numbers.pop();
 
-    'outer: for bingo_number in &bingo_numbers {
+    let winner = play_to_win(&bingo_numbers, bingo_cards.clone());
+    let loser = play_to_lose(&bingo_numbers, bingo_cards.clone());
+
+    println!("If I win: {}", winner);
+    println!("If the squid wins: {}", loser);
+
+}
+
+fn play_to_win(
+    bingo_numbers: &Vec<u8>,
+    mut bingo_cards: Vec<BingoCard>,
+    ) -> u32 {
+
+    let mut points = 0;
+
+    'outer: for bingo_number in bingo_numbers {
         for bingo_card in &mut bingo_cards {
             bingo_card.cross(*bingo_number);
 
             if bingo_card.is_bingo() {
-                println!(
-                    "{:?}",
-                    bingo_card.sum_unmarked() * *bingo_number as u16
-                );
+                points = bingo_card.sum_unmarked() * *bingo_number as u32;
 
                 break 'outer;
             }
         }
     }
+
+    points
 }
 
-#[derive(Debug)]
+fn play_to_lose(
+    bingo_numbers: &Vec<u8>,
+    mut bingo_cards: Vec<BingoCard>,
+    ) -> u32 {
+
+    let mut points = 0;
+
+    'outer: for bingo_number in bingo_numbers {
+        for bingo_card in &mut bingo_cards {
+            bingo_card.cross(*bingo_number);
+
+            if bingo_card.is_bingo() && !bingo_card.has_won {
+                points = bingo_card.sum_unmarked() * *bingo_number as u32;
+                bingo_card.win();
+            }
+        }
+    }
+
+    points
+}
+
+#[derive(Debug, Clone)]
 struct Square(u8, bool);
 
 impl Square {
@@ -45,9 +80,10 @@ impl Square {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct BingoCard {
-    points: Vec<Vec<Square>>
+    points: Vec<Vec<Square>>,
+    has_won: bool
 }
 
 impl BingoCard {
@@ -62,7 +98,7 @@ impl BingoCard {
             )
             .collect();
 
-        BingoCard { points: points }
+        BingoCard { points: points, has_won: false }
     }
 
     pub fn cross(&mut self, digit: u8) {
@@ -74,6 +110,10 @@ impl BingoCard {
                 }
             }
         }
+    }
+
+    pub fn win(&mut self) {
+        self.has_won = true
     }
 
     pub fn is_bingo(&self) -> bool {
@@ -100,13 +140,13 @@ impl BingoCard {
         is_bingo
     }
 
-    pub fn sum_unmarked(&self) -> u16 {
+    pub fn sum_unmarked(&self) -> u32 {
         let mut total_sum = 0;
 
         for row in &self.points {
             for square in row {
                 if !square.1 {
-                    total_sum += square.0 as u16
+                    total_sum += square.0 as u32
                 }
             }
         }
