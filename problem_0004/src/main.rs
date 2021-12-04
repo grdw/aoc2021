@@ -57,7 +57,7 @@ fn play_to_lose(
 
     let mut points = 0;
 
-    'outer: for bingo_number in bingo_numbers {
+    for bingo_number in bingo_numbers {
         for bingo_card in &mut bingo_cards {
             bingo_card.cross(*bingo_number);
 
