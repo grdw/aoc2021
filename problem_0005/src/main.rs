@@ -123,10 +123,9 @@ fn two_line_overlaps(input: &Vec<&str>, incl_diagonals: bool) -> usize {
 
     for line in input {
         let l = Line::from(line);
-        let points = l.points();
 
         if incl_diagonals || l.is_horizontal() || l.is_vertical() {
-            for p in points {
+            for p in l.points() {
                 let counter = point_counts.entry(p).or_insert(0);
                 *counter += 1;
             }
