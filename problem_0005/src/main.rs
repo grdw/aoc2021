@@ -9,7 +9,8 @@ fn main() {
         .split_terminator("\n")
         .collect();
 
-    println!("Amount of overlaps of 2: {:?}", two_line_overlaps(&lines));
+    println!("Amount of overlaps of 2 (no diagonals): {:?}", two_line_overlaps(&lines, false));
+    println!("Amount of overlaps of 2 (incl. diagonals): {:?}", two_line_overlaps(&lines, true));
 }
 
 #[derive(Debug, Hash, Eq)]
@@ -99,6 +100,17 @@ impl Line {
 }
 
 #[test]
+fn test_is_direction() {
+    let vertical_line = Line::from("0,9 -> 5,9");
+	let horizontal_line = Line::from("2,2 -> 2,1");
+
+    assert!(horizontal_line.is_horizontal());
+    assert!(!horizontal_line.is_vertical());
+    assert!(vertical_line.is_vertical());
+    assert!(!vertical_line.is_horizontal());
+}
+
+#[test]
 fn test_intermediary_points() {
 	let horizontal_line = Line::from("3,3 -> 3,1");
     let points = horizontal_line.points();
@@ -106,19 +118,18 @@ fn test_intermediary_points() {
     assert_eq!(points[1], Point { x: 3, y: 2 });
 }
 
-fn two_line_overlaps(input: &Vec<&str>) -> usize {
+fn two_line_overlaps(input: &Vec<&str>, incl_diagonals: bool) -> usize {
     let mut point_counts: HashMap<Point, u32> = HashMap::new();
 
     for line in input {
         let l = Line::from(line);
         let points = l.points();
-        println!("\n");
-        println!("{:?}", l);
-        println!("{:?}", points);
 
-        for p in points {
-            let counter = point_counts.entry(p).or_insert(0);
-            *counter += 1;
+        if incl_diagonals || l.is_horizontal() || l.is_vertical() {
+            for p in points {
+                let counter = point_counts.entry(p).or_insert(0);
+                *counter += 1;
+            }
         }
     }
 
@@ -127,7 +138,7 @@ fn two_line_overlaps(input: &Vec<&str>) -> usize {
 
 #[test]
 fn test_overlaps() {
-	let two_line_overlaps = two_line_overlaps(&vec![
+	let lines = vec![
 		"0,9 -> 5,9",
 		"8,0 -> 0,8",
 		"9,4 -> 3,4",
@@ -138,7 +149,11 @@ fn test_overlaps() {
 		"3,4 -> 1,4",
 		"0,0 -> 8,8",
 		"5,5 -> 8,2"
-    ]);
+    ];
 
-    assert_eq!(two_line_overlaps, 12);
+    let t1 = two_line_overlaps(&lines, false);
+    let t2 = two_line_overlaps(&lines, true);
+
+    assert_eq!(t1, 5);
+    assert_eq!(t2, 12);
 }
