@@ -102,7 +102,7 @@ impl Line {
 #[test]
 fn test_is_direction() {
     let vertical_line = Line::from("0,9 -> 5,9");
-	let horizontal_line = Line::from("2,2 -> 2,1");
+    let horizontal_line = Line::from("2,2 -> 2,1");
 
     assert!(horizontal_line.is_horizontal());
     assert!(!horizontal_line.is_vertical());
@@ -112,7 +112,7 @@ fn test_is_direction() {
 
 #[test]
 fn test_intermediary_points() {
-	let horizontal_line = Line::from("3,3 -> 3,1");
+    let horizontal_line = Line::from("3,3 -> 3,1");
     let points = horizontal_line.points();
 
     assert_eq!(points[1], Point { x: 3, y: 2 });
@@ -138,17 +138,17 @@ fn two_line_overlaps(input: &Vec<&str>, incl_diagonals: bool) -> usize {
 
 #[test]
 fn test_overlaps() {
-	let lines = vec![
-		"0,9 -> 5,9",
-		"8,0 -> 0,8",
-		"9,4 -> 3,4",
-		"2,2 -> 2,1",
-		"7,0 -> 7,4",
-		"6,4 -> 2,0",
-		"0,9 -> 2,9",
-		"3,4 -> 1,4",
-		"0,0 -> 8,8",
-		"5,5 -> 8,2"
+    let lines = vec![
+        "0,9 -> 5,9",
+        "8,0 -> 0,8",
+        "9,4 -> 3,4",
+        "2,2 -> 2,1",
+        "7,0 -> 7,4",
+        "6,4 -> 2,0",
+        "0,9 -> 2,9",
+        "3,4 -> 1,4",
+        "0,0 -> 8,8",
+        "5,5 -> 8,2"
     ];
 
     let t1 = two_line_overlaps(&lines, false);
