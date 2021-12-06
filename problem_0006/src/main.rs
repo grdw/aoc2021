@@ -17,12 +17,10 @@ fn main() {
 }
 
 fn immaculate_conception(mut lantern_fish: Vec<i16>, days: i16) -> u128 {
-    for i in 0..lantern_fish.len() {
-        lantern_fish[i] = days - lantern_fish[i]
-    }
+    //let mut fish_count = lantern_fish.len() as u128;
 
-    for l in lantern_fish {
-        println!("{}", l);
+    for d in 0..days {
+
     }
 
     0
@@ -39,4 +37,39 @@ fn test_lantern_fish() {
 
     let count = immaculate_conception(lantern_fish.clone(), 256);
     assert_eq!(count, 26984457539);
+}
+
+fn fish_count(start: u16, days: u16) -> u128 {
+    //let nine = 2.0_f64.powf((days / 9) as f64) as u128;
+    //println!("{}", nine);
+    // Assuming they all go each 7th day
+    2.0_f64.powf((days / 7) as f64) as u128
+}
+
+fn actual_fish_count(i: u16, days: u16) -> u128 {
+    let mut fishes = vec![i];
+    for d in 0..days {
+        for i in 0..fishes.len() {
+            if fishes[i] == 0 {
+                fishes[i] = 6;
+                fishes.push(8);
+            } else {
+                fishes[i] -= 1;
+            }
+        }
+    }
+
+    fishes.len() as u128
+}
+
+#[test]
+fn test_fish_count() {
+    //assert_eq!(actual_fish_count(6, 28), 9);
+    //assert_eq!(fish_count(6, 28), 9);
+    //assert_eq!(fish_count(1, 80), 1401);
+    assert_eq!(actual_fish_count(6, 80), 905);
+    assert_eq!(fish_count(6, 80), 905);
+    //assert_eq!(fish_count(6, 18), 4);
+    //assert_eq!(fish_count(0, 80), 1421);
+    //assert_eq!(fish_count(1, 80), 1401);
 }
