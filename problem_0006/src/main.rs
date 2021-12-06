@@ -38,57 +38,36 @@ fn test_lantern_fish() {
     assert_eq!(count, 5934);
 }
 
-//fn recurse_count(
-//    lantern_fish: &mut u16,
-//    days: u16,
-//    fish_counts: &mut u128,
-//    cycle: u16
-//    ) {
-//
-//    if *lantern_fish == 9 && days > 0 {
-//        *fish_counts += 1;
-//    }
-//
-//    if days < *lantern_fish { return }
-//
-//    recurse_count(
-//        &mut 7,
-//        days - *lantern_fish,
-//        fish_counts,
-//        cycle + 1
-//    );
-//
-//    recurse_count(
-//        &mut 9,
-//        days - *lantern_fish,
-//        fish_counts,
-//        cycle + 1
-//    );
-//}
-//
-//fn fast_conception(mut lantern_fishes: Vec<u16>, days: u16) -> u128 {
-//    lantern_fishes.iter_mut().map(|lantern_fish| {
-//        let mut fish_count = 1;
-//
-//        recurse_count(
-//            lantern_fish,
-//            days,
-//            &mut fish_count,
-//            0
-//        );
-//        fish_count
-//    }).sum()
-//}
-//
-//#[test]
-//fn test_fast_conception() {
-//    let lantern_fishes = vec![3, 4, 3, 1, 2];
-//
-//    let days = 18;
-//    assert_eq!(immaculate_conception(lantern_fishes.clone(), days), 26);
-//    assert_eq!(fast_conception(lantern_fishes.clone(), days), 26);
-//
-//    let days = 80;
-//    assert_eq!(immaculate_conception(lantern_fishes.clone(), days), 5934);
-//    assert_eq!(fast_conception(lantern_fishes.clone(), days), 5934);
-//}
+fn t(d_left: u16, reducer: u16, count: &mut u128) {
+    if reducer == 9 {
+        *count += 1
+    }
+
+    if d_left > 9 {
+        t(d_left - 9, 9, count);
+        t(d_left - 7, 7, count);
+    }
+}
+
+fn fast_conception(l: Vec<u16>, days: u16) -> u128 {
+    let d: Vec<u16> = l.iter().map(|n| days - n).collect();
+
+    let mut c = 1;
+    t(d[0], l[0], &mut c);
+    println!("{}", c);
+    0
+}
+
+#[test]
+fn test_fast_conception() {
+    let lantern_fishes = vec![3, 4, 3, 1, 2];
+
+    //let days = 18;
+    //assert_eq!(immaculate_conception(lantern_fishes.clone(), days), 26);
+    //assert_eq!(fast_conception(lantern_fishes.clone(), days), 26);
+
+    //let days = 80;
+    //assert_eq!(immaculate_conception(lantern_fishes.clone(), days), 5934);
+    //assert_eq!(fast_conception(lantern_fishes.clone(), days), 5934);
+    assert_eq!(fast_conception(lantern_fishes.clone(), 256), 26984457539);
+}
