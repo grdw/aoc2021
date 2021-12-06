@@ -45,17 +45,17 @@ fn test_lantern_fish() {
     assert_eq!(count, 15);
 }
 
-fn step_day(f: [u128; 9]) -> [u128; 9] {
-    [f[1], f[2], f[3], f[4], f[5], f[6], f[7] + f[0], f[8], f[0]]
-}
-
 fn fast_conception(data: Vec<u16>, days: u16) -> u128 {
     let fish = data.iter().fold([0u128; 9], |mut acc, val| {
         acc[*val as usize] += 1;
         acc
     });
 
-    (0..days).fold(fish, |acc, _| step_day(acc)).iter().sum()
+    (0..days).fold(fish, |mut acc, _| {
+        acc.rotate_left(1);
+        acc[6] += acc[8];
+        acc
+    }).iter().sum()
 }
 #[test]
 fn test_fast_conception() {
