@@ -19,6 +19,14 @@ const POS: &'static [&'static[usize]] = &[
     &[0,1,2,3,5,6]    // 9
 ];
 
+const LENGTH_MAP: &'static [&'static[usize]] = &[
+    &[1],
+    &[7],
+    &[4],
+    &[2,3,5],
+    &[0,6,9]
+];
+
 fn main() {
 	let display_string = fs::read_to_string("input")
                             .unwrap_or("".to_string());
@@ -49,18 +57,10 @@ fn unique_segments(input: &Vec<&str>) -> usize {
 
 fn valid_perm(chars: &Vec<char>, val: &str) -> bool {
     let ind = val.len() - 2;
-    let length_map: Vec<Vec<usize>> = vec![
-        vec![1],
-        vec![7],
-        vec![4],
-        vec![2,3,5],
-        vec![0,6,9],
-    ];
-
     let mut sorted_val: Vec<char> = val.chars().collect();
     sorted_val.sort();
 
-    match length_map.get(ind) {
+    match LENGTH_MAP.get(ind) {
         Some(positions) => {
             positions.iter().any(|p| {
                 let perms = POS[*p];
