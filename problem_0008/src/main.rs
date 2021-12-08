@@ -63,19 +63,21 @@ fn valid_perm(chars: &Vec<char>, val: &str) -> bool {
         return true
     }
 
+    let mut sorted_val: Vec<char> = val.chars().collect();
+    sorted_val.sort();
+
     match map.get(ind) {
         Some(positions) => {
             positions.iter().any(|p| {
-                let perms = heap(POS[*p].to_vec());
+                let perms = POS[*p].to_vec();
+                let mut chars: Vec<char> = perms
+                    .into_iter()
+                    .map(|n| chars[n])
+                    .collect();
 
-                perms.iter().any(|c| {
-                    let string: String = c
-                        .into_iter()
-                        .map(|n| chars[*n])
-                        .collect();
+                chars.sort();
 
-                    &string == val
-                })
+                sorted_val == chars
             })
         },
         None => false
@@ -92,32 +94,6 @@ fn test_valid_perm() {
     assert_eq!(valid_perm(&perm, "acdfg"), true);
     assert_eq!(valid_perm(&perm, "abdfg"), true);
     assert_eq!(valid_perm(&perm, "acedgfb"), true); //cdfbe gcdfa fbcad dab cefabd cdfgeb eafb cagedb ab | cdfeb fcadb cdfeb cdbaf"
-}
-
-fn heap<T: Clone>(mut vector: Vec<T>) -> Vec<Vec<T>> {
-    let mut result: Vec<usize> = vec![0; vector.len()];
-    let mut total = vec![];
-    let mut i = 0;
-
-    total.push(vector.clone());
-
-    while i < vector.len() {
-        if result[i] < i {
-            if i % 2 == 0 {
-                vector.swap(0, i);
-            } else {
-                vector.swap(result[i], i);
-            }
-            total.push(vector.clone());
-            result[i] += 1;
-            i = 0;
-        } else {
-            result[i] = 0;
-            i += 1
-        }
-    }
-
-    total
 }
 
 fn heap_with_prefix(mut vector: Vec<char>, prefix: char) -> Vec<Vec<char>> {
