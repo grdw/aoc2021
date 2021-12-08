@@ -156,7 +156,7 @@ fn sum_digit_values(input: &Vec<&str>) -> u64 {
             pos.sort();
 
             match POS.iter().position(|t| *t == pos) {
-                Some(n) => sum += (n as u64 * 10_u64.pow((3 - i) as u32)),
+                Some(n) => sum += n as u64 * 10_u64.pow((3 - i) as u32),
                 None => panic!("Also a bug")
             }
         }
