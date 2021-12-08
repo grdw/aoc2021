@@ -31,26 +31,50 @@ fn unique_segments(input: &Vec<&str>) -> u32 {
 
 use std::collections::HashMap;
 
+struct Display {
+    measurements: Vec<String>
+}
+
+fn heap_char(mut vector: Vec<char>) -> Vec<Vec<char>> {
+    let mut result: Vec<usize> = vec![0; vector.len()];
+    let mut i = 0;
+
+    println!("{:?}", result);
+    while i < vector.len() {
+        if result[i] < i {
+            if i % 2 == 0 {
+                vector.swap(0, i);
+            } else {
+                vector.swap(result[i], i);
+            }
+
+            println!("{:?}", result);
+            result[i] += 1;
+            i = 0;
+        } else {
+            result[i] = 0;
+            i += 1
+        }
+    }
+
+    vec![vec!['a']]
+}
+
+// IDEA is
+// Get all perms of a till g
+// filter out all perms where:
+// 1 (2, 5) or (5, 2)
+// 7 (2, 5, 0) or (5, 2, 0)
+// etc. etc.
 fn sum_digit_values(input: &Vec<&str>) -> u64 {
-    let mask = "abcdefg";
+    let results = heap_char("abcdefg".chars().collect());
+    println!("{:?}", results);
 
     for measurement in input {
         let parsed: Vec<Vec<String>> = measurement
             .split(" | ")
             .map(|t| t.split(" ").map(|n| String::from(n)).collect() )
             .collect();
-
-        let mut tens = parsed[0].clone();
-        let digits = &parsed[1];
-
-        println!("---");
-
-        for t in tens {
-            let total = t.chars()
-                .map(|n| (n as u8 as u32).pow(2))
-                .sum::<u32>();
-            println!("{} {}", t, total);
-        }
     }
 
     0
