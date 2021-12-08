@@ -121,39 +121,40 @@ fn heap_with_prefix(mut vector: Vec<char>, prefix: char) -> Vec<Vec<char>> {
     total
 }
 
-fn sum_digit_values(input: &Vec<&str>) -> u64 {
-    let mut sum = 0;
+fn display_formation<'a>(tens: &'a Vec<&str>) -> Option<Vec<char>> {
+    let mut mask: Vec<char> = "abcdefg".chars().collect();
+    let mut prefix = ' ';
 
-    for measurement in input {
+    for c in tens[1].chars() {
+        if !tens[0].chars().any(|l| l == c) {
+            mask.retain(|&x| x != c);
+            prefix = c;
+            break;
+        }
+    }
+
+    let mut perms = heap_with_prefix(mask, prefix);
+
+    for t in tens {
+        perms.retain(|perm| valid_perm(perm, t));
+    }
+
+    if perms.len() != 1 {
+        panic!("There can only be 1 formation!");
+    }
+
+    perms.first().cloned()
+}
+
+fn sum_digit_values(input: &Vec<&str>) -> u64 {
+    input.iter().fold(0, |total_acc, measurement| {
         let parsed: Vec<&str> = measurement.split(" | ").collect();
         let digits: Vec<&str> = parsed[1].split(" ").collect();
         let mut tens: Vec<&str> = parsed[0].split(" ").collect();
         tens.sort_by_key(|t| t.len());
 
-        let mut mask: Vec<char> = "abcdefg".chars().collect();
-        let mut prefix = ' ';
-
-        for c in tens[1].chars() {
-            if !tens[0].chars().any(|l| l == c) {
-                mask.retain(|&x| x != c);
-                prefix = c;
-                break;
-            }
-        }
-
-        let mut perms = heap_with_prefix(mask, prefix);
-
-        for t in tens {
-            perms.retain(|perm| valid_perm(perm, t));
-        }
-
-        if perms.len() != 1 {
-            panic!("BUG!");
-        }
-
-        let final_perm = &perms[0];
-
-        for (i, d) in digits.iter().enumerate() {
+        let final_perm = display_formation(&tens).unwrap();
+        let four_digit_num = digits.iter().enumerate().fold(0, |acc, (i, d)| {
             let mut pos: Vec<usize> = d
                 .chars()
                 .map(|n| final_perm.iter().position(|t| *t == n).unwrap()).
@@ -161,14 +162,16 @@ fn sum_digit_values(input: &Vec<&str>) -> u64 {
 
             pos.sort();
 
-            match POS.iter().position(|t| *t == pos) {
-                Some(n) => sum += n as u64 * 10_u64.pow((3 - i) as u32),
-                None => panic!("Also a bug")
-            }
-        }
-    }
+            let pos_in = POS
+                .iter()
+                .position(|t| *t == pos)
+                .unwrap();
 
-    sum
+            acc + (pos_in as u64 * 10_u64.pow((3 - i) as u32))
+        });
+
+        total_acc + four_digit_num
+    })
 }
 
 #[test]
