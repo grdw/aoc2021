@@ -29,17 +29,13 @@ fn unique_segments(input: &Vec<&str>) -> u32 {
     count
 }
 
-use std::collections::HashMap;
-
-struct Display {
-    measurements: Vec<String>
-}
-
 fn heap_char(mut vector: Vec<char>) -> Vec<Vec<char>> {
     let mut result: Vec<usize> = vec![0; vector.len()];
+    let mut total = vec![];
     let mut i = 0;
 
-    println!("{:?}", result);
+    total.push(vector.clone());
+
     while i < vector.len() {
         if result[i] < i {
             if i % 2 == 0 {
@@ -47,8 +43,7 @@ fn heap_char(mut vector: Vec<char>) -> Vec<Vec<char>> {
             } else {
                 vector.swap(result[i], i);
             }
-
-            println!("{:?}", result);
+            total.push(vector.clone());
             result[i] += 1;
             i = 0;
         } else {
@@ -57,24 +52,46 @@ fn heap_char(mut vector: Vec<char>) -> Vec<Vec<char>> {
         }
     }
 
-    vec![vec!['a']]
+    total
 }
 
 // IDEA is
 // Get all perms of a till g
 // filter out all perms where:
+//   0
+//  1 2
+//   3
+//  4 5
+//   6
+//
 // 1 (2, 5) or (5, 2)
 // 7 (2, 5, 0) or (5, 2, 0)
 // etc. etc.
 fn sum_digit_values(input: &Vec<&str>) -> u64 {
-    let results = heap_char("abcdefg".chars().collect());
-    println!("{:?}", results);
+    let positions_of_numbers_in_order = vec![
+        vec![0,1,2,4,5,6],   // 0
+        vec![2,5],           // 1
+        vec![0,2,3,4,6],     // 2
+        vec![0,2,3,5,6],     // 3
+        vec![1,2,3,5],       // 4
+        vec![0,1,3,5,6],     // 5
+        vec![0,1,3,4,5,6],   // 6
+        vec![0,2,5],         // 7
+        vec![0,1,2,3,4,5,6], // 8
+        vec![0,1,2,3,5,6]    // 9
+    ];
 
     for measurement in input {
-        let parsed: Vec<Vec<String>> = measurement
-            .split(" | ")
-            .map(|t| t.split(" ").map(|n| String::from(n)).collect() )
-            .collect();
+        let parsed: Vec<&str> = measurement.split(" | ").collect();
+        let digits: Vec<&str> = parsed[1].split(" ").collect();
+        let mut tens: Vec<&str> = parsed[0].split(" ").collect();
+        tens.sort_by_key(|a| a.len());
+
+        let mut perms = heap_char("abcdefg".chars().collect());
+
+        println!("{:?}", tens);
+        perms.retain(|&group| tens[0]);
+        println!("{}", perms.len());
     }
 
     0
