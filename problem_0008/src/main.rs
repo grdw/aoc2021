@@ -114,6 +114,38 @@ fn heap<T: Clone>(mut vector: Vec<T>) -> Vec<Vec<T>> {
     total
 }
 
+fn heap_with_prefix(mut vector: Vec<char>, prefix: char) -> Vec<Vec<char>> {
+    let mut result: Vec<usize> = vec![0; vector.len()];
+    let mut total = vec![];
+    let mut i = 0;
+
+    let mut copy = vector.clone();
+    copy.insert(0, prefix);
+    total.push(copy);
+
+    while i < vector.len() {
+        if result[i] < i {
+            if i % 2 == 0 {
+                vector.swap(0, i);
+            } else {
+                vector.swap(result[i], i);
+            }
+
+            let mut copy = vector.clone();
+            copy.insert(0, prefix);
+            total.push(copy);
+
+            result[i] += 1;
+            i = 0;
+        } else {
+            result[i] = 0;
+            i += 1
+        }
+    }
+
+    total
+}
+
 // IDEA is
 // Get all perms of a till g
 // filter out all perms where:
@@ -128,20 +160,31 @@ fn heap<T: Clone>(mut vector: Vec<T>) -> Vec<Vec<T>> {
 // etc. etc.
 fn sum_digit_values(input: &Vec<&str>) -> u64 {
     let mut sum = 0;
-    let heap_perms = heap("abcdefg".chars().collect());
 
     for measurement in input {
         let parsed: Vec<&str> = measurement.split(" | ").collect();
         let digits: Vec<&str> = parsed[1].split(" ").collect();
-        let mut perms = heap_perms.clone();
         let mut tens: Vec<&str> = parsed[0].split(" ").collect();
         tens.sort_by_key(|t| t.len());
+
+        let mut mask: Vec<char> = "abcdefg".chars().collect();
+        let mut prefix = ' ';
+
+        for c in tens[1].chars() {
+            if !tens[0].chars().any(|l| l == c) {
+                mask.retain(|&x| x != c);
+                prefix = c;
+                break;
+            }
+        }
+
+        let mut perms = heap_with_prefix(mask, prefix);
 
         for t in tens {
             perms.retain(|perm| valid_perm(perm, t));
         }
 
-        if perms.len() > 1 {
+        if perms.len() != 1 {
             panic!("BUG!");
         }
 
