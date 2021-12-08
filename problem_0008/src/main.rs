@@ -121,10 +121,13 @@ fn heap_with_prefix(mut vector: Vec<char>, prefix: char) -> Vec<Vec<char>> {
     total
 }
 
-fn display_formation<'a>(tens: &'a Vec<&str>) -> Option<Vec<char>> {
-    let mut mask: Vec<char> = "abcdefg".chars().collect();
+fn display_formation<'a>(unparsed_tens: &'a str) -> Option<Vec<char>> {
     let mut prefix = ' ';
+    let mut mask: Vec<char> = "abcdefg".chars().collect();
+    let mut tens: Vec<&str> = unparsed_tens.split(" ").collect();
+    tens.sort_by_key(|t| t.len());
 
+    // In this case the '1' and '7' follow one after the other
     for c in tens[1].chars() {
         if !tens[0].chars().any(|l| l == c) {
             mask.retain(|&x| x != c);
@@ -149,27 +152,26 @@ fn display_formation<'a>(tens: &'a Vec<&str>) -> Option<Vec<char>> {
 fn sum_digit_values(input: &Vec<&str>) -> u64 {
     input.iter().fold(0, |total_acc, measurement| {
         let parsed: Vec<&str> = measurement.split(" | ").collect();
-        let mut tens: Vec<&str> = parsed[0].split(" ").collect();
-        tens.sort_by_key(|t| t.len());
 
-        let final_perm = display_formation(&tens).unwrap();
+        let formation = display_formation(parsed[0]).unwrap();
         let four_digit_num = parsed[1]
             .split(" ")
             .enumerate()
-            .fold(0, |acc, (i, d)| {
-                let mut pos: Vec<usize> = d
+            .fold(0, |acc, (i, digit)| {
+                let power = 10_u64.pow((3 - i) as u32);
+                let mut pos: Vec<usize> = digit
                     .chars()
-                    .map(|n| final_perm.iter().position(|t| *t == n).unwrap()).
-                    collect();
+                    .map(|n| formation.iter().position(|t| *t == n).unwrap())
+                    .collect();
 
                 pos.sort();
 
-                let pos_in = POS
+                let digit_value = power * POS
                     .iter()
                     .position(|t| *t == pos)
-                    .unwrap();
+                    .unwrap() as u64;
 
-                acc + (pos_in as u64 * 10_u64.pow((3 - i) as u32))
+                acc + digit_value
             });
 
         total_acc + four_digit_num
