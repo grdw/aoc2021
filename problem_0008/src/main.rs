@@ -29,6 +29,33 @@ fn unique_segments(input: &Vec<&str>) -> u32 {
     count
 }
 
+use std::collections::HashMap;
+
+fn sum_digit_values(input: &Vec<&str>) -> u64 {
+    let mask = "abcdefg";
+
+    for measurement in input {
+        let parsed: Vec<Vec<String>> = measurement
+            .split(" | ")
+            .map(|t| t.split(" ").map(|n| String::from(n)).collect() )
+            .collect();
+
+        let mut tens = parsed[0].clone();
+        let digits = &parsed[1];
+
+        println!("---");
+
+        for t in tens {
+            let total = t.chars()
+                .map(|n| (n as u8 as u32).pow(2))
+                .sum::<u32>();
+            println!("{} {}", t, total);
+        }
+    }
+
+    0
+}
+
 #[test]
 fn test_broken_seven_segment_display() {
     let input = vec![
@@ -44,5 +71,6 @@ fn test_broken_seven_segment_display() {
         "gcafb gcf dcaebfg ecagb gf abcdeg gaef cafbge fdbac fegbdc | fgae cfgab fg bagce"
     ];
 
-    assert_eq!(unique_segments(&input), 26)
+    assert_eq!(unique_segments(&input), 26);
+    assert_eq!(sum_digit_values(&input), 61229)
 }
