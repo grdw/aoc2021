@@ -69,16 +69,16 @@ fn heap_char(mut vector: Vec<char>) -> Vec<Vec<char>> {
 // etc. etc.
 fn sum_digit_values(input: &Vec<&str>) -> u64 {
     let positions_of_numbers_in_order = vec![
-        vec![0,1,2,4,5,6],   // 0
         vec![2,5],           // 1
+        vec![0,2,5],         // 7
+        vec![1,2,3,5],       // 4
         vec![0,2,3,4,6],     // 2
         vec![0,2,3,5,6],     // 3
-        vec![1,2,3,5],       // 4
         vec![0,1,3,5,6],     // 5
+        vec![0,1,2,4,5,6],   // 0
         vec![0,1,3,4,5,6],   // 6
-        vec![0,2,5],         // 7
-        vec![0,1,2,3,4,5,6], // 8
-        vec![0,1,2,3,5,6]    // 9
+        vec![0,1,2,3,5,6],   // 9
+        vec![0,1,2,3,4,5,6]  // 8
     ];
 
     for measurement in input {
@@ -90,8 +90,9 @@ fn sum_digit_values(input: &Vec<&str>) -> u64 {
         let mut perms = heap_char("abcdefg".chars().collect());
 
         println!("{:?}", tens);
-        perms.retain(|&group| tens[0]);
+        //perms.retain(|&group| tens[0]);
         println!("{}", perms.len());
+        break;
     }
 
     0
