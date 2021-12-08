@@ -23,6 +23,9 @@ fn main() {
 
     let count = unique_segments(&measurements);
     println!("The amount of unique segments: {:?}", count);
+
+    let count = sum_digit_values(&measurements);
+    println!("The amount of unique segments: {:?}", count);
 }
 
 fn unique_segments(input: &Vec<&str>) -> u32 {
