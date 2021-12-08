@@ -70,14 +70,13 @@ fn valid_perm(chars: &Vec<char>, val: &str) -> bool {
         Some(positions) => {
             positions.iter().any(|p| {
                 let perms = POS[*p].to_vec();
-                let mut chars: Vec<char> = perms
+                let mut sorted_string: Vec<char> = perms
                     .into_iter()
                     .map(|n| chars[n])
                     .collect();
 
-                chars.sort();
-
-                sorted_val == chars
+                sorted_string.sort();
+                sorted_val == sorted_string
             })
         },
         None => false
@@ -93,7 +92,7 @@ fn test_valid_perm() {
     assert_eq!(valid_perm(&perm, "acdeg"), true);
     assert_eq!(valid_perm(&perm, "acdfg"), true);
     assert_eq!(valid_perm(&perm, "abdfg"), true);
-    assert_eq!(valid_perm(&perm, "acedgfb"), true); //cdfbe gcdfa fbcad dab cefabd cdfgeb eafb cagedb ab | cdfeb fcadb cdfeb cdbaf"
+    assert_eq!(valid_perm(&perm, "acedgfb"), true);
 }
 
 fn heap_with_prefix(mut vector: Vec<char>, prefix: char) -> Vec<Vec<char>> {
