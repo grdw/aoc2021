@@ -28,21 +28,17 @@ fn main() {
     println!("The amount of unique segments: {:?}", count);
 }
 
-fn unique_segments(input: &Vec<&str>) -> u32 {
+fn unique_segments(input: &Vec<&str>) -> usize {
     let valid_lengths = vec![2, 3, 4, 7];
-    let mut count = 0;
 
-    for measurement in input {
+    input.iter().fold(0, |acc, measurement| {
         let parsed: Vec<&str> = measurement.split(" | ").collect();
-        let digits: Vec<&str> = parsed[1].split(" ").collect();
 
-        for d in &digits {
-            if valid_lengths.contains(&d.len()) {
-                count += 1
-            }
-        }
-    }
-    count
+        acc + parsed[1]
+            .split(" ")
+            .filter(|d| valid_lengths.contains(&d.len()))
+            .count()
+    })
 }
 
 fn valid_perm(chars: &Vec<char>, val: &str) -> bool {
