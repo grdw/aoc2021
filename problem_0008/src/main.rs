@@ -149,26 +149,28 @@ fn display_formation<'a>(tens: &'a Vec<&str>) -> Option<Vec<char>> {
 fn sum_digit_values(input: &Vec<&str>) -> u64 {
     input.iter().fold(0, |total_acc, measurement| {
         let parsed: Vec<&str> = measurement.split(" | ").collect();
-        let digits: Vec<&str> = parsed[1].split(" ").collect();
         let mut tens: Vec<&str> = parsed[0].split(" ").collect();
         tens.sort_by_key(|t| t.len());
 
         let final_perm = display_formation(&tens).unwrap();
-        let four_digit_num = digits.iter().enumerate().fold(0, |acc, (i, d)| {
-            let mut pos: Vec<usize> = d
-                .chars()
-                .map(|n| final_perm.iter().position(|t| *t == n).unwrap()).
-                collect();
+        let four_digit_num = parsed[1]
+            .split(" ")
+            .enumerate()
+            .fold(0, |acc, (i, d)| {
+                let mut pos: Vec<usize> = d
+                    .chars()
+                    .map(|n| final_perm.iter().position(|t| *t == n).unwrap()).
+                    collect();
 
-            pos.sort();
+                pos.sort();
 
-            let pos_in = POS
-                .iter()
-                .position(|t| *t == pos)
-                .unwrap();
+                let pos_in = POS
+                    .iter()
+                    .position(|t| *t == pos)
+                    .unwrap();
 
-            acc + (pos_in as u64 * 10_u64.pow((3 - i) as u32))
-        });
+                acc + (pos_in as u64 * 10_u64.pow((3 - i) as u32))
+            });
 
         total_acc + four_digit_num
     })
