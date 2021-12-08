@@ -1,5 +1,11 @@
 use std::fs;
 
+// Assume the display is the format of:
+//   0
+//  1 2
+//   3
+//  4 5
+//   6
 const POS: &'static [&'static[usize]] = &[
     &[0,1,2,4,5,6],   // 0
     &[2,5],           // 1
@@ -146,18 +152,6 @@ fn heap_with_prefix(mut vector: Vec<char>, prefix: char) -> Vec<Vec<char>> {
     total
 }
 
-// IDEA is
-// Get all perms of a till g
-// filter out all perms where:
-//   0
-//  1 2
-//   3
-//  4 5
-//   6
-//
-// 1 (2, 5) or (5, 2)
-// 7 (2, 5, 0) or (5, 2, 0)
-// etc. etc.
 fn sum_digit_values(input: &Vec<&str>) -> u64 {
     let mut sum = 0;
 
