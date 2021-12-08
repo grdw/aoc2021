@@ -48,7 +48,8 @@ fn unique_segments(input: &Vec<&str>) -> usize {
 }
 
 fn valid_perm(chars: &Vec<char>, val: &str) -> bool {
-    let map: Vec<Vec<usize>> = vec![
+    let ind = val.len() - 2;
+    let length_map: Vec<Vec<usize>> = vec![
         vec![1],
         vec![7],
         vec![4],
@@ -56,30 +57,23 @@ fn valid_perm(chars: &Vec<char>, val: &str) -> bool {
         vec![0,6,9],
     ];
 
-    let ind = val.len() - 2;
-
-    // in case an 8 is present
-    if ind == 5 {
-        return true
-    }
-
     let mut sorted_val: Vec<char> = val.chars().collect();
     sorted_val.sort();
 
-    match map.get(ind) {
+    match length_map.get(ind) {
         Some(positions) => {
             positions.iter().any(|p| {
-                let perms = POS[*p].to_vec();
+                let perms = POS[*p];
                 let mut sorted_string: Vec<char> = perms
                     .into_iter()
-                    .map(|n| chars[n])
+                    .map(|n| chars[*n])
                     .collect();
 
                 sorted_string.sort();
                 sorted_val == sorted_string
             })
         },
-        None => false
+        None => true
     }
 }
 
