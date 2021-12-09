@@ -103,7 +103,7 @@ fn max_basins_size(heightmap: &Vec<Vec<i32>>) -> i32 {
         let mut max;
 
         loop {
-            let mut match_points: Vec<(i32, i32)> = vec![];
+            let mut matches: Vec<bool> = vec![];
             max = points.len();
 
             for i in min..max {
@@ -111,31 +111,31 @@ fn max_basins_size(heightmap: &Vec<Vec<i32>>) -> i32 {
                 let mut findable: Vec<(i32, i32)> =
                     get_points(&heightmap, py as usize, px as usize)
                         .iter()
-                        .filter(|(sy, sx, point)| {
-                            let found_already = (0..points.len() - 1)
-                                .any(|i| points[i].0 == py + sy && points[i].1 == px + sx);
+                        .map(|(sy, sx, point)| (sy + py, sx + px, point))
+                        .filter(|(sy, sx, &point)| {
+                            let found_already =
+                                (0..points.len() - 1).any(|i|
+                                    points[i].0 == *sy && points[i].1 == *sx
+                                );
 
-                            let found_already_m = (0..match_points.len())
-                                .any(|i| match_points[i].0 == py + sy && match_points[i].1 == px + sx);
-
-                            *point < 9 && !found_already && !found_already_m
+                            point < 9 && !found_already
                         })
-                        .map(|(sy, sx, _)| (sy + py, sx + px))
+                        .map(|(sy, sx, _)| (sy, sx))
                         .collect();
 
+                matches.push(findable.len() > 0);
                 if findable.len() > 0 {
                     min = max;
-                    match_points.append(&mut findable);
+                    points.append(&mut findable);
                 }
             }
 
-            if match_points.is_empty() {
+            if matches.iter().all(|n| !n) {
                 break;
-            } else {
-                points.append(&mut match_points);
             }
         }
 
+        points.dedup();
         points.len()
     }).collect();
 
