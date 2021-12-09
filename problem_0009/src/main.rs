@@ -91,40 +91,43 @@ fn test_risk_level() {
     assert_eq!(risk_level(&heightmap), 2);
 }
 
-fn max_basins_size(heightmap: &Vec<Vec<i32>>) -> i32 {
-    let lps = low_points(heightmap);
+fn basin_size(heightmap: &Vec<Vec<i32>>, y: i32, x: i32) -> usize {
+    let mut points = vec![(y, x)];
+    let mut matches = 1;
+    let mut min = 0;
+    let mut max;
 
-    let mut basin_sizes: Vec<usize> = lps.iter().map(|(_, x, y)| {
-        let mut points = vec![(*y as i32, *x as i32)];
-        let mut matches = 1;
-        let mut min = 0;
-        let mut max;
+    while matches > 0 {
+        matches = 0;
+        max = points.len();
 
-        while matches > 0 {
-            matches = 0;
-            max = points.len();
+        for i in min..max {
+            let (py, px) = points[i];
+            let mut findable: Vec<(i32, i32)> =
+                get_points(&heightmap, py as usize, px as usize)
+                    .iter()
+                    .filter(|(_, _, point)| *point < 9)
+                    .map(|(sy, sx, _)| (sy + py, sx + px))
+                    .filter(|t| !points.contains(&t))
+                    .collect();
 
-            for i in min..max {
-                let (py, px) = points[i];
-                let mut findable: Vec<(i32, i32)> =
-                    get_points(&heightmap, py as usize, px as usize)
-                        .iter()
-                        .filter(|(_, _, point)| *point < 9)
-                        .map(|(sy, sx, _)| (sy + py, sx + px))
-                        .filter(|t| !points.contains(&t))
-                        .collect();
-
-                if findable.len() > 0 {
-                    min = max;
-                    matches += 1;
-                    points.append(&mut findable);
-                }
+            if findable.len() > 0 {
+                min = max;
+                matches += 1;
+                points.append(&mut findable);
             }
         }
+    }
 
-        points.dedup();
-        points.len()
-    }).collect();
+    points.dedup();
+    points.len()
+}
+
+fn max_basins_size(heightmap: &Vec<Vec<i32>>) -> i32 {
+    let mut basin_sizes: Vec<usize> = low_points(heightmap)
+        .iter()
+        .map(|(_, x, y)| basin_size(heightmap, *y as i32, *x as i32))
+        .collect();
 
     basin_sizes.sort_by(|a, b| b.cmp(a));
     basin_sizes[0..3].iter().fold(1, |acc, a| acc * a) as i32
