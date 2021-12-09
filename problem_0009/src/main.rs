@@ -99,14 +99,12 @@ fn max_basins_size(heightmap: &Vec<Vec<i32>>) -> i32 {
 
     let mut basin_sizes: Vec<usize> = lps.iter().map(|(_, x, y)| {
         let mut points = vec![(*y as i32, *x as i32)];
-        let mut start = true;
         let mut min = 0;
         let mut max;
 
-        while start {
-            max = points.len();
-
+        loop {
             let mut match_points: Vec<(i32, i32)> = vec![];
+            max = points.len();
 
             for i in min..max {
                 let (py, px) = points[i];
@@ -132,7 +130,7 @@ fn max_basins_size(heightmap: &Vec<Vec<i32>>) -> i32 {
             }
 
             if match_points.is_empty() {
-                start = false
+                break;
             } else {
                 points.append(&mut match_points);
             }
