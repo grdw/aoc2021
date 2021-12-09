@@ -21,17 +21,20 @@ fn main() {
     println!("The max basins size combined equal to: {:?}", max_basins);
 }
 
-fn get_point(grid: &Vec<Vec<i32>>,
+fn get_points(grid: &Vec<Vec<i32>>,
              y: usize,
-             x: usize,
-             dir_y: i32,
-             dir_x: i32) -> i32 {
+             x: usize) -> Vec<(i32, i32, i32)> {
 
-    let temp = vec![];
-    let y = y as i32 + dir_y;
-    let x = x as i32 + dir_x;
-    let y_row = grid.get(y as usize).unwrap_or(&temp);
-    *y_row.get(x as usize).unwrap_or(&10)
+    let directions = vec![(1, 0), (0, -1), (0, 1), (-1, 0)];
+
+    directions.iter().map(|(dy, dx)| {
+        let temp = vec![];
+        let y = y as i32 + dy;
+        let x = x as i32 + dx;
+        let y_row = grid.get(y as usize).unwrap_or(&temp);
+
+        (*dy, *dx, *y_row.get(x as usize).unwrap_or(&10))
+    }).collect()
 }
 
 fn risk_level(heightmap: &Vec<Vec<i32>>) -> i32 {
@@ -41,15 +44,14 @@ fn risk_level(heightmap: &Vec<Vec<i32>>) -> i32 {
 fn low_points(heightmap: &Vec<Vec<i32>>) -> Vec<(i32, usize, usize)> {
     let grid_height = heightmap.len();
     let grid_width = heightmap[0].len();
-    let directions = vec![(1, 0), (0, -1), (0, 1), (-1, 0)];
     let mut low_points = vec![];
 
     for y in 0..grid_height {
         for x in 0..grid_width {
             let current_min = heightmap[y as usize][x as usize];
-            let surrounded: i32 = directions
+            let surrounded: i32 = *get_points(&heightmap, y, x)
                 .iter()
-                .map(|(dy, dx)| get_point(&heightmap, y, x, *dy, *dx))
+                .map(|(_, _, value)| value )
                 .min()
                 .unwrap();
 
@@ -94,7 +96,6 @@ fn test_risk_level() {
 
 fn max_basins_size(heightmap: &Vec<Vec<i32>>) -> i32 {
     let lps = low_points(heightmap);
-    let directions = vec![(1, 0), (0, -1), (0, 1), (-1, 0)];
 
     let mut basin_sizes: Vec<usize> = lps.iter().map(|(_, x, y)| {
         let mut points = vec![(*y as i32, *x as i32)];
@@ -109,20 +110,20 @@ fn max_basins_size(heightmap: &Vec<Vec<i32>>) -> i32 {
 
             for i in min..max {
                 let (py, px) = points[i];
-                let mut findable: Vec<(i32, i32)> = directions
-                    .iter()
-                    .filter(|(dy, dx)| {
-                        let point = get_point(&heightmap, py as usize, px as usize, *dy, *dx);
-                        let found_already = (0..points.len() - 1)
-                            .any(|i| points[i].0 == py + dy && points[i].1 == px + dx);
+                let mut findable: Vec<(i32, i32)> =
+                    get_points(&heightmap, py as usize, px as usize)
+                        .iter()
+                        .filter(|(sy, sx, point)| {
+                            let found_already = (0..points.len() - 1)
+                                .any(|i| points[i].0 == py + sy && points[i].1 == px + sx);
 
-                        let found_already_m = (0..match_points.len())
-                            .any(|i| match_points[i].0 == py + dy && match_points[i].1 == px + dx);
+                            let found_already_m = (0..match_points.len())
+                                .any(|i| match_points[i].0 == py + sy && match_points[i].1 == px + sx);
 
-                        point < 9 && !found_already && !found_already_m
-                    })
-                    .map(|(dy, dx)| (dy + py, dx + px))
-                    .collect();
+                            *point < 9 && !found_already && !found_already_m
+                        })
+                        .map(|(sy, sx, _)| (sy + py, sx + px))
+                        .collect();
 
                 if findable.len() > 0 {
                     min = max;
