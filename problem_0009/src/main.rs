@@ -21,10 +21,7 @@ fn main() {
     println!("The max basins size combined equal to: {:?}", max_basins);
 }
 
-fn get_points(grid: &Vec<Vec<i32>>,
-             y: usize,
-             x: usize) -> Vec<(i32, i32, i32)> {
-
+fn get_points(grid: &Vec<Vec<i32>>, y: usize, x: usize) -> Vec<(i32, i32, i32)> {
     let directions = vec![(1, 0), (0, -1), (0, 1), (-1, 0)];
 
     directions.iter().map(|(dy, dx)| {
