@@ -89,71 +89,48 @@ fn test_valid_perm() {
     assert_eq!(valid_perm(&perm, "acedgfb"), true);
 }
 
-fn heap_with_prefix(mut vector: Vec<char>, prefix: char) -> Vec<Vec<char>> {
-    let mut result: Vec<usize> = vec![0; vector.len()];
-    let mut total = vec![];
-    let mut i = 0;
-
-    let mut copy = vector.clone();
-    copy.insert(0, prefix);
-    total.push(copy);
-
-    while i < vector.len() {
-        if result[i] < i {
-            if i % 2 == 0 {
-                vector.swap(0, i);
-            } else {
-                vector.swap(result[i], i);
-            }
-
-            let mut copy = vector.clone();
-            copy.insert(0, prefix);
-            total.push(copy);
-
-            result[i] += 1;
-            i = 0;
-        } else {
-            result[i] = 0;
-            i += 1
-        }
+fn next_perm(res: &mut Vec<char>) {
+    let mut i = res.len() - 1;
+    while res[i - 1] >= res[i] {
+        i -= 1
     }
 
-    total
+    let mut j = res.len();
+    while res[j - 1] <= res[i - 1] {
+        j -= 1;
+    }
+
+    res.swap(i - 1, j - 1);
+
+    i += 1;
+    j = res.len();
+
+    while i < j {
+        res.swap(i - 1, j - 1);
+        i += 1;
+        j -= 1;
+    }
 }
 
-fn display_formation<'a>(unparsed_tens: &'a str) -> Option<Vec<char>> {
-    let mut prefix = ' ';
+fn display_formation<'a>(unparsed_tens: &'a str) -> Vec<char> {
     let mut mask: Vec<char> = "abcdefg".chars().collect();
     let mut tens: Vec<&str> = unparsed_tens.split(" ").collect();
     tens.sort_by_key(|t| t.len());
 
-    // In this case the '1' and '7' follow one after the other
-    for c in tens[1].chars() {
-        if !tens[0].chars().any(|l| l == c) {
-            mask.retain(|&x| x != c);
-            prefix = c;
-            break;
+    loop {
+        next_perm(&mut mask);
+
+        if tens.iter().all(|t| valid_perm(&mask, t)) {
+            break mask;
         }
     }
-
-    let mut perms = heap_with_prefix(mask, prefix);
-
-    for t in tens {
-        perms.retain(|perm| valid_perm(perm, t));
-    }
-
-    if perms.len() != 1 {
-        panic!("There can only be 1 formation!");
-    }
-
-    perms.first().cloned()
 }
 
 fn sum_digit_values(input: &Vec<&str>) -> u64 {
     input.iter().fold(0, |total_acc, measurement| {
         let parsed: Vec<&str> = measurement.split(" | ").collect();
 
-        let formation = display_formation(parsed[0]).unwrap();
+        let formation = display_formation(parsed[0]);
         let four_digit_num = parsed[1]
             .split(" ")
             .enumerate()
