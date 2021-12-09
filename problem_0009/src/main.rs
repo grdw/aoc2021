@@ -111,9 +111,8 @@ fn max_basins_size(heightmap: &Vec<Vec<i32>>) -> i32 {
                         .iter()
                         .filter(|(_, _, point)| *point < 9)
                         .map(|(sy, sx, _)| (sy + py, sx + px))
+                        .filter(|t| !points.contains(&t))
                         .collect();
-
-                findable.retain(|p| !points.contains(&p));
 
                 if findable.len() > 0 {
                     min = max;
