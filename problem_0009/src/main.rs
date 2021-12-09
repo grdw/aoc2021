@@ -103,7 +103,7 @@ fn max_basins_size(heightmap: &Vec<Vec<i32>>) -> i32 {
         let mut max;
 
         loop {
-            let mut matches: Vec<bool> = vec![];
+            let mut matches = 0;
             max = points.len();
 
             for i in min..max {
@@ -116,15 +116,15 @@ fn max_basins_size(heightmap: &Vec<Vec<i32>>) -> i32 {
                         .collect();
 
                 findable.retain(|p| !points.contains(&p));
-                matches.push(findable.len() > 0);
 
                 if findable.len() > 0 {
                     min = max;
+                    matches += 1;
                     points.append(&mut findable);
                 }
             }
 
-            if matches.iter().all(|n| !n) {
+            if matches == 0 {
                 break;
             }
         }
