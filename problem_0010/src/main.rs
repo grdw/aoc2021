@@ -51,10 +51,10 @@ fn parse(input: &Vec<&str>) -> Vec<(Vec<char>, Vec<char>)> {
 
 fn parse_navigation_subsystem(input: &Vec<&str>) -> u64 {
     let points = HashMap::from([
-        ('}', 1197),
         (')', 3),
-        ('>', 25137),
         (']', 57),
+        ('}', 1197),
+        ('>', 25137)
     ]);
 
 
@@ -73,24 +73,27 @@ fn parse_navigation_subsystem(input: &Vec<&str>) -> u64 {
 fn autocomplete_subsystem(input: &Vec<&str>) -> u64 {
     let mut scores = vec![];
     let complete_points = HashMap::from([
-        ('{', 3),
         ('(', 1),
-        ('<', 4),
         ('[', 2),
+        ('{', 3),
+        ('<', 4)
     ]);
 
     let parsed = parse(input);
 
     for (opens, closes) in parsed {
-        if closes.is_empty() {
-            let mut autocomplete_total = 0;
-            for open in opens.iter().rev() {
-                autocomplete_total *= 5;
-                autocomplete_total += complete_points.get(open).unwrap();
-            }
-
-            scores.push(autocomplete_total)
+        if !closes.is_empty() {
+            continue;
         }
+
+        let mut autocomplete_total = 0;
+
+        for open in opens.iter().rev() {
+            autocomplete_total *= 5;
+            autocomplete_total += complete_points.get(open).unwrap();
+        }
+
+        scores.push(autocomplete_total)
     }
 
     scores.sort();
