@@ -57,7 +57,6 @@ fn parse_navigation_subsystem(input: &Vec<&str>) -> u64 {
         ('>', 25137)
     ]);
 
-
     let mut subtotal = 0;
     let parsed = parse(input);
 
