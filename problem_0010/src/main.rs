@@ -79,7 +79,7 @@ fn autocomplete_subsystem(input: &Vec<&str>) -> u64 {
         ('[', 2),
     ]);
 
-    let parsed = parse(&input);
+    let parsed = parse(input);
 
     for (opens, closes) in parsed {
         if closes.is_empty() {
