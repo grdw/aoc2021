@@ -94,14 +94,11 @@ fn test_risk_level() {
 fn basin_size(heightmap: &Vec<Vec<i32>>, y: i32, x: i32) -> usize {
     let mut points = vec![(y, x)];
     let mut matches = 1;
-    let mut min = 0;
-    let mut max;
 
     while matches > 0 {
         matches = 0;
-        max = points.len();
 
-        for i in min..max {
+        for i in 0..points.len() {
             let (py, px) = points[i];
             let mut findable: Vec<(i32, i32)> =
                 get_points(&heightmap, py as usize, px as usize)
@@ -112,7 +109,6 @@ fn basin_size(heightmap: &Vec<Vec<i32>>, y: i32, x: i32) -> usize {
                     .collect();
 
             if findable.len() > 0 {
-                min = max;
                 matches += 1;
                 points.append(&mut findable);
             }
