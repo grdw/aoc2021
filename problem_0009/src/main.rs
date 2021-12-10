@@ -1,7 +1,7 @@
 use std::fs;
 
 fn main() {
-	let display_string = fs::read_to_string("input")
+    let display_string = fs::read_to_string("input")
                             .unwrap_or("".to_string());
 
     let height_map: Vec<Vec<i32>> = display_string
