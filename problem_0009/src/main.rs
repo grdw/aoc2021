@@ -37,7 +37,7 @@ fn get_points(grid: &Grid, y: usize, x: usize) -> Vec<(i32, i32, u8)> {
 }
 
 fn risk_level(heightmap: &Grid) -> u32 {
-    low_points(heightmap).iter().map(|(_, _, n)| *n as u32 + 1).sum()
+    low_points(heightmap).iter().map(|&(_, _, n)| n as u32 + 1).sum()
 }
 
 fn low_points(heightmap: &Grid) -> Vec<(usize, usize, u8)> {
@@ -116,7 +116,7 @@ fn basin_size(heightmap: &Grid, y: i32, x: i32) -> usize {
 fn max_basins_size(heightmap: &Grid) -> u32 {
     let mut basin_sizes: Vec<usize> = low_points(heightmap)
         .iter()
-        .map(|(y, x, _)| basin_size(heightmap, *y as i32, *x as i32))
+        .map(|&(y, x, _)| basin_size(heightmap, y as i32, x as i32))
         .collect();
 
     basin_sizes.sort_by(|a, b| b.cmp(a));
