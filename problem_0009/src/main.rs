@@ -105,9 +105,7 @@ fn basin_size(heightmap: &Vec<Vec<i32>>, y: i32, x: i32) -> usize {
                 .filter(|t| !points.contains(&t))
                 .collect();
 
-        if findable.len() > 0 {
-            points.append(&mut findable);
-        }
+        points.append(&mut findable);
         start += 1;
     }
 
