@@ -116,9 +116,7 @@ fn get_flash_points(octopuses: &mut Grid, size: usize) -> usize {
 
     // Reset to 0
     for (fy, fx) in &flash_points {
-        if octopuses[*fy][*fx] > FLASH_THRESHOLD {
-            octopuses[*fy][*fx] = 0;
-        }
+        octopuses[*fy][*fx] = 0;
     }
 
     flash_points.len()
