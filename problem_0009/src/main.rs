@@ -32,7 +32,7 @@ fn get_points(grid: &Grid, y: usize, x: usize) -> Vec<(i32, i32, u8)> {
         let x = x as i32 + dx;
         let y_row = grid.get(y as usize).unwrap_or(&temp);
 
-        (*dy, *dx, *y_row.get(x as usize).unwrap_or(&10))
+        (y, x, *y_row.get(x as usize).unwrap_or(&10))
     }).collect()
 }
 
@@ -102,9 +102,8 @@ fn basin_size(heightmap: &Grid, y: i32, x: i32) -> usize {
         let mut findable: Vec<(i32, i32)> =
             get_points(&heightmap, py as usize, px as usize)
                 .iter()
-                .filter(|(_, _, point)| *point < 9)
-                .map(|(sy, sx, _)| (sy + py, sx + px))
-                .filter(|t| !points.contains(&t))
+                .filter(|&&(y, x, point)| point < 9 && !points.contains(&(y, x)))
+                .map(|&(y, x, _)| (y, x))
                 .collect();
 
         points.append(&mut findable);
