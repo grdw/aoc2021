@@ -28,7 +28,9 @@ fn main() {
         )
         .collect();
 
+    let mut octopuses_clone = octopuses.clone();
     println!("Amount of flashes: {}", dumbo_octopus_flashes(&mut octopuses, 100));
+    println!("Say cheese! {}", all_flash(&mut octopuses_clone));
 }
 
 fn get_points(grid: &Grid, y: usize, x: usize) -> Vec<(i32, i32, u8)> {
@@ -75,54 +77,69 @@ fn test_get_points() {
     );
 }
 
-fn dumbo_octopus_flashes(octopuses: &mut Grid, steps: usize) -> u64 {
-    let size = octopuses.len();
-    let mut flashes = 0;
+fn get_flash_points(octopuses: &mut Grid, size: usize) -> usize {
+    let mut flash_points = vec![];
+    let mut start = 0;
 
-    for _ in 0..steps {
-        let mut flash_points = vec![];
-        let mut start = 0;
+    for y in 0..size {
+        for x in 0..size {
+            octopuses[y][x] += 1;
 
-        for y in 0..size {
-            for x in 0..size {
-                octopuses[y][x] += 1;
-
-                if octopuses[y][x] > 9 {
-                    flash_points.push((y, x));
-                }
-            }
-        }
-
-        while start < flash_points.len() {
-            let (fy, fx) = flash_points[start];
-            let surroundings = get_points(&octopuses, fy, fx);
-
-            for (sy, sx, _) in surroundings {
-                let ssy = sy as usize;
-                let ssx = sx as usize;
-                let point = (ssy, ssx);
-
-                octopuses[ssy][ssx] += 1;
-
-                if octopuses[ssy][ssx] > 9 &&
-                    !flash_points.contains(&point) {
-
-                    flash_points.push(point);
-                }
-            }
-
-            start += 1
-        }
-
-        for (fy, fx) in flash_points {
-            if octopuses[fy][fx] > 9 {
-                flashes += 1;
-                octopuses[fy][fx] = 0;
+            if octopuses[y][x] > 9 {
+                flash_points.push((y, x));
             }
         }
     }
 
-    flashes
+    while start < flash_points.len() {
+        let (fy, fx) = flash_points[start];
+        let surroundings = get_points(&octopuses, fy, fx);
+
+        for (sy, sx, _) in surroundings {
+            let ssy = sy as usize;
+            let ssx = sx as usize;
+            let point = (ssy, ssx);
+
+            octopuses[ssy][ssx] += 1;
+
+            if octopuses[ssy][ssx] > 9 &&
+                !flash_points.contains(&point) {
+
+                flash_points.push(point);
+            }
+        }
+
+        start += 1
+    }
+
+    // Reset to 0
+    for (fy, fx) in &flash_points {
+        if octopuses[*fy][*fx] > 9 {
+            octopuses[*fy][*fx] = 0;
+        }
+    }
+
+    flash_points.len()
+}
+
+fn dumbo_octopus_flashes(octopuses: &mut Grid, steps: usize) -> usize {
+    let size = octopuses.len();
+
+    (0..steps).fold(0, |f, _| f + get_flash_points(octopuses, size))
+}
+
+fn all_flash(octopuses: &mut Grid) -> usize {
+    let size = octopuses.len();
+    let mut start = 0;
+
+    loop {
+        let step_flashes = get_flash_points(octopuses, size);
+        start += 1;
+
+        if step_flashes == size.pow(2) {
+            break start
+        }
+    }
 }
 
 #[test]
@@ -198,4 +215,22 @@ fn test_dumbo_octopus_flashes() {
     ];
 
     assert_eq!(dumbo_octopus_flashes(&mut example, 100), 1656);
+}
+
+#[test]
+fn test_all_flash() {
+    let mut example = vec![
+        vec![5, 4, 8, 3, 1, 4, 3, 2, 2, 3],
+        vec![2, 7, 4, 5, 8, 5, 4, 7, 1, 1],
+        vec![5, 2, 6, 4, 5, 5, 6, 1, 7, 3],
+        vec![6, 1, 4, 1, 3, 3, 6, 1, 4, 6],
+        vec![6, 3, 5, 7, 3, 8, 5, 4, 7, 8],
+        vec![4, 1, 6, 7, 5, 2, 4, 6, 4, 5],
+        vec![2, 1, 7, 6, 8, 4, 1, 7, 2, 1],
+        vec![6, 8, 8, 2, 8, 8, 1, 1, 3, 4],
+        vec![4, 8, 4, 6, 8, 4, 8, 5, 5, 4],
+        vec![5, 2, 8, 3, 7, 5, 1, 5, 2, 6]
+    ];
+
+    assert_eq!(all_flash(&mut example), 195);
 }
