@@ -1,5 +1,7 @@
 use std::fs;
 
+const FLASH_THRESHOLD: u8 = 9;
+
 type Grid = Vec<Vec<u8>>;
 
 //fn debug(grid: &Grid) -> String {
@@ -85,7 +87,7 @@ fn get_flash_points(octopuses: &mut Grid, size: usize) -> usize {
         for x in 0..size {
             octopuses[y][x] += 1;
 
-            if octopuses[y][x] > 9 {
+            if octopuses[y][x] > FLASH_THRESHOLD {
                 flash_points.push((y, x));
             }
         }
@@ -102,7 +104,7 @@ fn get_flash_points(octopuses: &mut Grid, size: usize) -> usize {
 
             octopuses[ssy][ssx] += 1;
 
-            if octopuses[ssy][ssx] > 9 &&
+            if octopuses[ssy][ssx] > FLASH_THRESHOLD &&
                 !flash_points.contains(&point) {
 
                 flash_points.push(point);
@@ -114,7 +116,7 @@ fn get_flash_points(octopuses: &mut Grid, size: usize) -> usize {
 
     // Reset to 0
     for (fy, fx) in &flash_points {
-        if octopuses[*fy][*fx] > 9 {
+        if octopuses[*fy][*fx] > FLASH_THRESHOLD {
             octopuses[*fy][*fx] = 0;
         }
     }
