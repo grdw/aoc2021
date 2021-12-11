@@ -1,15 +1,17 @@
 use std::fs;
 
+type Grid = Vec<Vec<u8>>;
+
 fn main() {
     let display_string = fs::read_to_string("input")
                             .unwrap_or("".to_string());
 
-    let height_map: Vec<Vec<i32>> = display_string
+    let height_map: Grid = display_string
         .split_terminator("\n")
         .map(|line|
             line
                 .chars()
-                .map(|m| m.to_digit(10).unwrap() as i32)
+                .map(|m| m.to_digit(10).unwrap() as u8)
                 .collect()
         )
         .collect();
@@ -21,7 +23,7 @@ fn main() {
     println!("The max basins size combined equal to: {:?}", max_basins);
 }
 
-fn get_points(grid: &Vec<Vec<i32>>, y: usize, x: usize) -> Vec<(i32, i32, i32)> {
+fn get_points(grid: &Grid, y: usize, x: usize) -> Vec<(i32, i32, u8)> {
     let directions = vec![(1, 0), (0, -1), (0, 1), (-1, 0)];
 
     directions.iter().map(|(dy, dx)| {
@@ -34,26 +36,26 @@ fn get_points(grid: &Vec<Vec<i32>>, y: usize, x: usize) -> Vec<(i32, i32, i32)> 
     }).collect()
 }
 
-fn risk_level(heightmap: &Vec<Vec<i32>>) -> i32 {
-    low_points(heightmap).iter().map(|(n, _, _)| n + 1).sum()
+fn risk_level(heightmap: &Grid) -> u32 {
+    low_points(heightmap).iter().map(|(_, _, n)| *n as u32 + 1).sum()
 }
 
-fn low_points(heightmap: &Vec<Vec<i32>>) -> Vec<(i32, usize, usize)> {
+fn low_points(heightmap: &Grid) -> Vec<(usize, usize, u8)> {
     let grid_height = heightmap.len();
     let grid_width = heightmap[0].len();
     let mut low_points = vec![];
 
     for y in 0..grid_height {
         for x in 0..grid_width {
-            let current_min = heightmap[y as usize][x as usize];
-            let surrounded: i32 = *get_points(&heightmap, y, x)
+            let current_min = heightmap[y][x];
+            let surrounded: u8 = *get_points(&heightmap, y, x)
                 .iter()
                 .map(|(_, _, value)| value )
                 .min()
                 .unwrap();
 
             if current_min < surrounded {
-                low_points.push((current_min, x, y));
+                low_points.push((y, x, current_min));
             }
         }
     }
@@ -91,7 +93,7 @@ fn test_risk_level() {
     assert_eq!(risk_level(&heightmap), 2);
 }
 
-fn basin_size(heightmap: &Vec<Vec<i32>>, y: i32, x: i32) -> usize {
+fn basin_size(heightmap: &Grid, y: i32, x: i32) -> usize {
     let mut points = vec![(y, x)];
     let mut start = 0;
 
@@ -112,14 +114,14 @@ fn basin_size(heightmap: &Vec<Vec<i32>>, y: i32, x: i32) -> usize {
     points.len()
 }
 
-fn max_basins_size(heightmap: &Vec<Vec<i32>>) -> i32 {
+fn max_basins_size(heightmap: &Grid) -> u32 {
     let mut basin_sizes: Vec<usize> = low_points(heightmap)
         .iter()
-        .map(|(_, x, y)| basin_size(heightmap, *y as i32, *x as i32))
+        .map(|(y, x, _)| basin_size(heightmap, *y as i32, *x as i32))
         .collect();
 
     basin_sizes.sort_by(|a, b| b.cmp(a));
-    basin_sizes[0..3].iter().fold(1, |acc, a| acc * a) as i32
+    basin_sizes[0..3].iter().fold(1, |acc, a| acc * a) as u32
 }
 
 #[test]
