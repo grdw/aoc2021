@@ -104,16 +104,16 @@ impl CaveSystem<'_> {
         while let Some(route) = to_visit.pop() {
             let current = route[route.len() - 1];
 
+            if current == "end" {
+                routes += 1;
+            }
+
             if let Some(neighbors) = self.map.get(current) {
                 for neighbor in neighbors {
                     if big_cave(neighbor) || !route.contains(&neighbor) {
                         let mut new_route = route.clone();
                         new_route.push(*neighbor);
                         to_visit.push(new_route.clone());
-                    }
-
-                    if *neighbor == "end" {
-                        routes += 1;
                     }
                 }
             }
@@ -131,6 +131,10 @@ impl CaveSystem<'_> {
         while let Some(route) = to_visit.pop() {
             let current = route[route.len() - 1];
 
+            if current == "end" {
+                routes += 1;
+            }
+
             if let Some(neighbors) = self.map.get(current) {
                 for neighbor in neighbors {
                     if big_cave(neighbor) || double_visit(&route, neighbor) {
@@ -139,9 +143,6 @@ impl CaveSystem<'_> {
                         to_visit.push(new_route.clone());
                     }
 
-                    if *neighbor == "end" {
-                        routes += 1;
-                    }
                 }
             }
         }
