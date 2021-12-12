@@ -71,9 +71,8 @@ impl CaveSystem<'_> {
 
             if let Some(neighbors) = self.map.get(current) {
                 for neighbor in neighbors {
-                    let mut new_route = route.clone();
-
                     if big_cave(neighbor) || !route.contains(&neighbor) {
+                        let mut new_route = route.clone();
                         new_route.push(*neighbor);
                         to_visit.push(new_route.clone());
                     }
@@ -90,18 +89,18 @@ impl CaveSystem<'_> {
 
     fn double_visit(&self, route: &Vec<&str>, neighbor: &str) -> bool {
         let mut counts = HashMap::new();
-        let mut small_caves: Vec<&str> = route
-            .iter()
-            .filter(|&&n| !big_cave(n) && n != "start")
-            .map(|n| *n)
-            .collect();
 
-        small_caves.push(neighbor);
+        for c in route {
+            if big_cave(c) || c == &"start" {
+                continue
+            }
 
-        for c in &small_caves {
             let counter = counts.entry(c).or_insert(0);
             *counter += 1;
         }
+
+        let counter = counts.entry(&neighbor).or_insert(0);
+        *counter += 1;
 
         let two_counts = counts.values().filter(|&&n| n >= 2).count();
         two_counts < 2 && route.iter().filter(|&&n| n == neighbor).count() < 2
@@ -118,9 +117,8 @@ impl CaveSystem<'_> {
 
             if let Some(neighbors) = self.map.get(current) {
                 for neighbor in neighbors {
-                    let mut new_route = route.clone();
-
                     if big_cave(neighbor) || self.double_visit(&route, neighbor) {
+                        let mut new_route = route.clone();
                         new_route.push(*neighbor);
                         to_visit.push(new_route.clone());
                     }
