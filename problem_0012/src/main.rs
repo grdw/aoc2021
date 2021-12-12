@@ -29,6 +29,10 @@ impl CaveSystem<'_> {
                 nodes.swap(1, 0);
             }
 
+            if nodes[0] == "end" {
+                nodes.swap(0, 1);
+            }
+
             match map.get_mut(nodes[0]) {
                 Some(n) => { n.push(nodes[1]); },
                 None => {
@@ -118,4 +122,31 @@ fn test_passage_pathing_complex_example() {
     assert_eq!(system.map.get("dc"), Some(&vec!["end", "HN", "LN", "kj"]));
     assert_eq!(system.map.get("end"), None);
     assert_eq!(system.count_paths("start"), 19);
+}
+
+#[test]
+fn test_passage_pathing_more_complex_example() {
+    let complex_example = vec![
+        "fs-end",
+        "he-DX",
+        "fs-he",
+        "start-DX",
+        "pj-DX",
+        "end-zg",
+        "zg-sl",
+        "zg-pj",
+        "pj-he",
+        "RW-he",
+        "fs-DX",
+        "pj-RW",
+        "zg-RW",
+        "start-pj",
+        "he-WI",
+        "zg-he",
+        "pj-fs",
+        "start-RW"
+    ];
+
+    let system = CaveSystem::from_vec(&complex_example);
+    assert_eq!(system.count_paths("start"), 226);
 }
