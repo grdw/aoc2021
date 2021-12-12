@@ -1,6 +1,5 @@
 use std::fs;
 use std::collections::HashMap;
-//use std::{thread, time::Duration};
 
 fn main() {
     let input = fs::read_to_string("input")
@@ -8,7 +7,15 @@ fn main() {
 
     let edges: Vec<&str> = input.split_terminator("\n").collect();
     let cave_system = CaveSystem::from_vec(&edges);
-    println!("There are {:?} routes", cave_system.count_paths("start"));
+    println!(
+        "There are {:?} routes",
+        cave_system.count_paths("start")
+    );
+
+    println!(
+        "There are {:?} routes, if I can visit the first small cave twice",
+        cave_system.double_count_paths("start")
+    );
 }
 
 struct CaveSystem<'a> {
@@ -66,7 +73,54 @@ impl CaveSystem<'_> {
                 for neighbor in neighbors {
                     let mut new_route = route.clone();
 
-                    if big_cave(neighbor) || !new_route.contains(neighbor) {
+                    if big_cave(neighbor) || !route.contains(&neighbor) {
+                        new_route.push(*neighbor);
+                        to_visit.push(new_route.clone());
+                    }
+
+                    if *neighbor == "end" {
+                        routes += 1;
+                    }
+                }
+            }
+        }
+
+        routes
+    }
+
+    fn double_visit(&self, route: &Vec<&str>, neighbor: &str) -> bool {
+        let mut counts = HashMap::new();
+        let mut small_caves: Vec<&str> = route
+            .iter()
+            .filter(|&&n| !big_cave(n) && n != "start")
+            .map(|n| *n)
+            .collect();
+
+        small_caves.push(neighbor);
+
+        for c in &small_caves {
+            let counter = counts.entry(c).or_insert(0);
+            *counter += 1;
+        }
+
+        let two_counts = counts.values().filter(|&&n| n >= 2).count();
+        two_counts < 2 && route.iter().filter(|&&n| n == neighbor).count() < 2
+    }
+
+    fn double_count_paths(&self, start: &str) -> usize {
+        let mut to_visit = vec![];
+        let mut routes = 0;
+
+        to_visit.push(vec![start]);
+
+        while let Some(route) = to_visit.pop() {
+            let current = route[route.len() - 1];
+
+            if let Some(neighbors) = self.map.get(current) {
+                for neighbor in neighbors {
+                    let mut new_route = route.clone();
+
+                    if big_cave(neighbor) || self.double_visit(&route, neighbor) {
                         new_route.push(*neighbor);
                         to_visit.push(new_route.clone());
                     }
@@ -100,6 +154,7 @@ fn test_passage_pathing_example() {
     assert_eq!(system.map.get("b"), Some(&vec!["A", "d", "end"]));
     assert_eq!(system.map.get("end"), None);
     assert_eq!(system.count_paths("start"), 10);
+    assert_eq!(system.double_count_paths("start"), 36);
 }
 
 #[test]
