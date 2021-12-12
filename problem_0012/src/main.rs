@@ -26,6 +26,41 @@ fn big_cave(cave: &str) -> bool {
     cave.chars().all(|c| c.is_uppercase())
 }
 
+fn double_visit(route: &Vec<&str>, neighbor: &str) -> bool {
+    let mut counts = HashMap::new();
+
+    for c in route {
+        if big_cave(c) || c == &"start" {
+            continue
+        }
+
+        let counter = counts.entry(c).or_insert(0);
+        *counter += 1;
+    }
+
+    let counter = counts.entry(&neighbor).or_insert(0);
+    *counter += 1;
+
+    let two_counts = counts.values().filter(|&&n| n >= 2).count();
+    let neighbor_count = counts.get(&neighbor).unwrap() - 1;
+
+    two_counts < 2 && neighbor_count < 2
+}
+
+#[test]
+fn test_double_visit() {
+    let route = vec!["start"];
+    assert!(double_visit(&route, "c"));
+
+    let route = vec!["start", "c", "c", "D", "b"];
+    assert!(!double_visit(&route, "c"));
+    assert!(!double_visit(&route, "b"));
+    assert!(double_visit(&route, "a"));
+
+    let route = vec!["start", "c", "D", "b"];
+    assert!(double_visit(&route, "c"));
+}
+
 impl CaveSystem<'_> {
     fn from_vec<'a>(input: &'a Vec<&str>) -> CaveSystem<'a> {
         let mut map: HashMap<&str, Vec<&str>> = HashMap::new();
@@ -87,25 +122,6 @@ impl CaveSystem<'_> {
         routes
     }
 
-    fn double_visit(&self, route: &Vec<&str>, neighbor: &str) -> bool {
-        let mut counts = HashMap::new();
-
-        for c in route {
-            if big_cave(c) || c == &"start" {
-                continue
-            }
-
-            let counter = counts.entry(c).or_insert(0);
-            *counter += 1;
-        }
-
-        let counter = counts.entry(&neighbor).or_insert(0);
-        *counter += 1;
-
-        let two_counts = counts.values().filter(|&&n| n >= 2).count();
-        two_counts < 2 && route.iter().filter(|&&n| n == neighbor).count() < 2
-    }
-
     fn double_count_paths(&self, start: &str) -> usize {
         let mut to_visit = vec![];
         let mut routes = 0;
@@ -117,7 +133,7 @@ impl CaveSystem<'_> {
 
             if let Some(neighbors) = self.map.get(current) {
                 for neighbor in neighbors {
-                    if big_cave(neighbor) || self.double_visit(&route, neighbor) {
+                    if big_cave(neighbor) || double_visit(&route, neighbor) {
                         let mut new_route = route.clone();
                         new_route.push(*neighbor);
                         to_visit.push(new_route.clone());
