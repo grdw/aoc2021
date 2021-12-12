@@ -15,18 +15,24 @@ struct CaveSystem<'a> {
     map: HashMap<&'a str, Vec<&'a str>>
 }
 
+use std::{thread, time::Duration};
+
 impl CaveSystem<'_> {
     fn from_vec<'a>(input: &'a Vec<&str>) -> CaveSystem<'a> {
         let mut map: HashMap<&str, Vec<&str>> = HashMap::new();
         for conn in input {
             let nodes: Vec<&str> = conn.split("-").collect();
 
-            match map.get_mut(nodes[0]) {
-                Some(n) => { n.push(nodes[1]); },
-                None => { map.insert(nodes[0], vec![nodes[1]]); }
+            if nodes[1] != "start" {
+                match map.get_mut(nodes[0]) {
+                    Some(n) => { n.push(nodes[1]); },
+                    None => {
+                        map.insert(nodes[0], vec![nodes[1]]);
+                    }
+                }
             }
 
-            if nodes[0].chars().all(|n| n.is_uppercase()) {
+            if nodes[0] != "start" && nodes[1] != "end" {
                 match map.get_mut(nodes[1]) {
                     Some(n) => { n.push(nodes[0]); },
                     None => {
@@ -42,30 +48,39 @@ impl CaveSystem<'_> {
     }
 
     fn count_paths(&self, start: &str) -> u32 {
-        //let mut count = 0;
-        let mut visited = HashSet::new();
+        let mut distances = HashMap::new();
+        //let mut visited = HashSet::new();
         let mut to_visit = BinaryHeap::new();
 
+        distances.insert(start, 0);
         to_visit.push(start);
 
+        println!("-----");
         while let Some(n) = to_visit.pop() {
-            if n.chars().all(|t| t.is_lowercase()) {
-                if !visited.insert(n) {
-                    continue;
-                }
-            }
+            //if n.chars().all(|t| t.is_lowercase()) {
+            //    if !visited.insert(n) {
+            //        continue;
+            //    }
+            //}
 
-            //count += 1;
-            println!("{}", n);
+            println!("Who can I reach from node: {}", n);
+            thread::sleep(Duration::from_millis(2000));
 
             if let Some(neighbors) = self.map.get(n) {
                 for neighbor in neighbors {
-                    println!("- {}", neighbor);
-                    to_visit.push(*neighbor);
+                    //println!("- {}", neighbor);
+                    let counter = distances.entry(*neighbor).or_insert(0);
+                    *counter += 1;
+
+                    if neighbor.chars().all(|t| t.is_uppercase()) {
+                        to_visit.push(*neighbor);
+                    }
+                    println!("{} | {:?}", neighbor, distances);
                 }
             }
         }
 
+        println!("{:?}", distances);
         0
     }
 }
@@ -83,6 +98,9 @@ fn test_passage_pathing_example() {
     ];
 
     let system = CaveSystem::from_vec(&example);
+    assert_eq!(system.map.get("start"), Some(&vec!["A", "b"]));
+    assert_eq!(system.map.get("b"), Some(&vec!["A", "d", "end"]));
+    assert_eq!(system.map.get("end"), None);
     assert_eq!(system.count_paths("start"), 10);
 }
 
@@ -102,5 +120,8 @@ fn test_passage_pathing_complex_example() {
     ];
 
     let system = CaveSystem::from_vec(&other_example);
-    assert_eq!(system.count_paths("start"), 19);
+    assert_eq!(system.map.get("start"), Some(&vec!["HN", "kj", "dc"]));
+    assert_eq!(system.map.get("dc"), Some(&vec!["end", "HN", "LN", "kj"]));
+    assert_eq!(system.map.get("end"), None);
+    //assert_eq!(system.count_paths("start"), 19);
 }
