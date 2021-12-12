@@ -142,7 +142,6 @@ impl CaveSystem<'_> {
                         new_route.push(*neighbor);
                         to_visit.push(new_route.clone());
                     }
-
                 }
             }
         }
