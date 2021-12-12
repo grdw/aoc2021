@@ -55,7 +55,7 @@ impl CaveSystem<'_> {
 
     fn count_paths(&self, start: &str) -> usize {
         let mut to_visit = vec![];
-        let mut routes = vec![];
+        let mut routes = 0;
 
         to_visit.push(vec![start]);
 
@@ -72,13 +72,13 @@ impl CaveSystem<'_> {
                     }
 
                     if *neighbor == "end" {
-                        routes.push(new_route.clone());
+                        routes += 1;
                     }
                 }
             }
         }
 
-        routes.len()
+        routes
     }
 }
 
