@@ -12,10 +12,10 @@ fn main() {
         cave_system.count_paths()
     );
 
-    //println!(
-    //    "There are {:?} routes, if I can visit the first small cave twice",
-    //    cave_system.double_count_paths(&Cave::Start)
-    //);
+    println!(
+        "There are {:?} routes, if I can visit the first small cave twice",
+        cave_system.double_count_paths()
+    );
 }
 
 #[derive(Debug, Eq, PartialEq, Hash, Copy, Clone)]
@@ -153,8 +153,6 @@ impl CaveSystem<'_> {
 
             if let Some(neighbors) = self.map.get(current) {
                 for neighbor in neighbors {
-                    let mut new_route = route.clone();
-
                     let condition = match neighbor {
                         &Cave::Big(_) | &Cave::End => true,
                         &Cave::Small(_) => !route.contains(&neighbor),
@@ -162,6 +160,7 @@ impl CaveSystem<'_> {
                     };
 
                     if condition {
+                        let mut new_route = route.clone();
                         new_route.push(neighbor);
                         to_visit.push(new_route.clone());
                     }
@@ -187,8 +186,6 @@ impl CaveSystem<'_> {
 
             if let Some(neighbors) = self.map.get(current) {
                 for neighbor in neighbors {
-                    let mut new_route = route.clone();
-
                     let condition = match neighbor {
                         &Cave::Big(_) | &Cave::End => true,
                         &Cave::Small(_) => double_visit(&route, neighbor),
@@ -196,6 +193,7 @@ impl CaveSystem<'_> {
                     };
 
                     if condition {
+                        let mut new_route = route.clone();
                         new_route.push(neighbor);
                         to_visit.push(new_route.clone());
                     }
