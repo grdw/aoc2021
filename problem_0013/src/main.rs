@@ -30,11 +30,14 @@ fn main() {
         })
         .collect();
 
+    let mut points_clone = points.clone();
+    fold_paper(&mut points_clone, &folds, 1);
     println!("Amount of folds after 1 time {:?}",
-             fold_paper(&points, &folds, 1).len());
+             points_clone.len());
 
-    let fully_folded = fold_paper(&points, &folds, folds.len());
-    display_paper(&fully_folded);
+    let mut points_clone = points.clone();
+    fold_paper(&mut points_clone, &folds, folds.len());
+    display_paper(&points_clone);
 }
 
 fn display_paper(points: &Points) {
@@ -53,23 +56,24 @@ fn display_paper(points: &Points) {
     }
 }
 
-fn fold_paper(points: &Points, folds: &Folds, times: usize) -> Points {
-    let mut current_points = points.clone();
-
+fn fold_paper(points: &mut Points, folds: &Folds, times: usize) {
     for i in 0..times {
         let (axis, value) = folds[i];
-        let height = current_points.iter().map(|n| n.1).max().unwrap();
-        let width = current_points.iter().map(|n| n.0).max().unwrap();
+        let height = points.iter().map(|n| n.1).max().unwrap();
+        let width = points.iter().map(|n| n.0).max().unwrap();
+
         let mut folds: Points = vec![];
         let mut unfolds: Points = vec![];
 
-        for (x, y) in &current_points {
+        for i in (0..points.len()).rev() {
+            let (x, y) = points[i];
             let val = if axis == "y" { y } else { x };
 
-            if val > &value {
-                folds.push((*x, *y));
-            } else if val < &value {
-                unfolds.push((*x, *y));
+            if val > value {
+                folds.push((x, y));
+                points.remove(i);
+            } else if val < value {
+                unfolds.push((x, y));
             }
         }
 
@@ -81,15 +85,11 @@ fn fold_paper(points: &Points, folds: &Folds, times: usize) -> Points {
                 (width - x, y)
             };
 
-            if !unfolds.contains(&folded_point) {
-                unfolds.push(folded_point)
+            if !points.contains(&folded_point) {
+                points.push(folded_point)
             }
         }
-
-        current_points = unfolds.clone();
     }
-
-    current_points
 }
 
 #[test]
@@ -120,6 +120,11 @@ fn test_transparent_origami() {
         ("x", 5)
     ];
 
-    assert_eq!(fold_paper(&points, &folds, 1).len(), 17);
-    assert_eq!(fold_paper(&points, &folds, 2).len(), 16);
+    let mut points_clone = points.clone();
+    fold_paper(&mut points_clone, &folds, 1);
+    assert_eq!(points_clone.len(), 17);
+
+    let mut points_clone = points.clone();
+    fold_paper(&mut points_clone, &folds, 2);
+    assert_eq!(points_clone.len(), 16);
 }
