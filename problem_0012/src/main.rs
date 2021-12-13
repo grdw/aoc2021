@@ -162,7 +162,7 @@ impl CaveSystem<'_> {
                     if condition {
                         let mut new_route = route.clone();
                         new_route.push(neighbor);
-                        to_visit.push(new_route.clone());
+                        to_visit.push(new_route);
                     }
                 }
             }
@@ -195,7 +195,7 @@ impl CaveSystem<'_> {
                     if condition {
                         let mut new_route = route.clone();
                         new_route.push(neighbor);
-                        to_visit.push(new_route.clone());
+                        to_visit.push(new_route);
                     }
                 }
             }
