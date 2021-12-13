@@ -34,7 +34,7 @@ fn main() {
 }
 
 fn fold_paper(points: &Points, folds: &Folds, times: usize) -> usize {
-    let current_points = points.clone();
+    let mut current_points = points.clone();
     let mut visible_points = 0;
 
     for i in 0..times {
@@ -68,6 +68,7 @@ fn fold_paper(points: &Points, folds: &Folds, times: usize) -> usize {
             }
         }
 
+        current_points = unfolds.clone();
         visible_points = unfolds.len();
     }
 
@@ -103,4 +104,5 @@ fn test_transparent_origami() {
     ];
 
     assert_eq!(fold_paper(&points, &folds, 1), 17);
+    assert_eq!(fold_paper(&points, &folds, 2), 16);
 }
