@@ -30,16 +30,33 @@ fn main() {
         })
         .collect();
 
-    println!("Amount of folds after 1 time {:?}", fold_paper(&points, &folds, 1));
+    println!("Amount of folds after 1 time {:?}",
+             fold_paper(&points, &folds, 1));
+    println!("Fully folded {:?}",
+             fold_paper(&points, &folds, folds.len()));
+}
+
+fn display_paper(points: &Points, width: usize, height: usize) {
+    let mut paper = vec![vec!['⬛'; width]; height];
+
+    for (x, y) in points {
+        paper[*y][*x] = '⬜';
+    }
+
+    println!("");
+    for line in paper {
+        let s: String = line.into_iter().collect();
+        println!("{}", s);
+    }
 }
 
 fn fold_paper(points: &Points, folds: &Folds, times: usize) -> usize {
     let mut current_points = points.clone();
+    let mut height = current_points.iter().map(|n| n.1).max().unwrap() + 1;
+    let mut width = current_points.iter().map(|n| n.0).max().unwrap() + 1;
     let mut visible_points = 0;
 
     for i in 0..times {
-        let height = current_points.iter().map(|n| n.1).max().unwrap() + 1;
-        let width = current_points.iter().map(|n| n.0).max().unwrap() + 1;
         let (axis, value) = folds[i];
 
         let mut folds: Points = vec![];
@@ -68,9 +85,17 @@ fn fold_paper(points: &Points, folds: &Folds, times: usize) -> usize {
             }
         }
 
+        if axis == "y" {
+            height /= 2;
+        } else {
+            width /= 2;
+        }
+
         current_points = unfolds.clone();
         visible_points = unfolds.len();
     }
+
+    display_paper(&current_points, width, height);
 
     visible_points
 }
