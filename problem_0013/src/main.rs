@@ -31,12 +31,15 @@ fn main() {
         .collect();
 
     println!("Amount of folds after 1 time {:?}",
-             fold_paper(&points, &folds, 1));
-    println!("Fully folded {:?}",
-             fold_paper(&points, &folds, folds.len()));
+             fold_paper(&points, &folds, 1).len());
+
+    let fully_folded = fold_paper(&points, &folds, folds.len());
+    display_paper(&fully_folded);
 }
 
-fn display_paper(points: &Points, width: usize, height: usize) {
+fn display_paper(points: &Points) {
+    let height = points.iter().map(|n| n.1).max().unwrap() + 1;
+    let width = points.iter().map(|n| n.0).max().unwrap() + 1;
     let mut paper = vec![vec!['⬛'; width]; height];
 
     for (x, y) in points {
@@ -50,15 +53,13 @@ fn display_paper(points: &Points, width: usize, height: usize) {
     }
 }
 
-fn fold_paper(points: &Points, folds: &Folds, times: usize) -> usize {
+fn fold_paper(points: &Points, folds: &Folds, times: usize) -> Points {
     let mut current_points = points.clone();
-    let mut height = current_points.iter().map(|n| n.1).max().unwrap() + 1;
-    let mut width = current_points.iter().map(|n| n.0).max().unwrap() + 1;
-    let mut visible_points = 0;
 
     for i in 0..times {
         let (axis, value) = folds[i];
-
+        let height = current_points.iter().map(|n| n.1).max().unwrap();
+        let width = current_points.iter().map(|n| n.0).max().unwrap();
         let mut folds: Points = vec![];
         let mut unfolds: Points = vec![];
 
@@ -75,9 +76,9 @@ fn fold_paper(points: &Points, folds: &Folds, times: usize) -> usize {
         for i in 0..folds.len() {
             let (x, y) = folds[i];
             let folded_point = if axis == "y" {
-                (x, height - y - 1)
+                (x, height - y)
             } else {
-                (width - x - 1, y)
+                (width - x, y)
             };
 
             if !unfolds.contains(&folded_point) {
@@ -85,19 +86,10 @@ fn fold_paper(points: &Points, folds: &Folds, times: usize) -> usize {
             }
         }
 
-        if axis == "y" {
-            height /= 2;
-        } else {
-            width /= 2;
-        }
-
         current_points = unfolds.clone();
-        visible_points = unfolds.len();
     }
 
-    display_paper(&current_points, width, height);
-
-    visible_points
+    current_points
 }
 
 #[test]
@@ -128,6 +120,6 @@ fn test_transparent_origami() {
         ("x", 5)
     ];
 
-    assert_eq!(fold_paper(&points, &folds, 1), 17);
-    assert_eq!(fold_paper(&points, &folds, 2), 16);
+    assert_eq!(fold_paper(&points, &folds, 1).len(), 17);
+    assert_eq!(fold_paper(&points, &folds, 2).len(), 16);
 }
