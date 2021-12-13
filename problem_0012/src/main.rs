@@ -141,19 +141,15 @@ impl CaveSystem<'_> {
                 for neighbor in neighbors {
                     let mut new_route = route.clone();
 
-                    match neighbor {
-                        &Cave::Big(_) | &Cave::End => {
-                            new_route.push(neighbor);
-                            to_visit.push(new_route.clone());
+                    let condition = match neighbor {
+                        &Cave::Big(_) | &Cave::End => true,
+                        &Cave::Small(_) => !route.contains(&neighbor),
+                        _ => false
+                    };
 
-                        },
-                        &Cave::Small(_) => {
-                            if !route.contains(&neighbor) {
-                                new_route.push(neighbor);
-                                to_visit.push(new_route.clone());
-                            }
-                        },
-                        _ => ()
+                    if condition {
+                        new_route.push(neighbor);
+                        to_visit.push(new_route.clone());
                     }
                 }
             }
