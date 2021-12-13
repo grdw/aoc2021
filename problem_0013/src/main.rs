@@ -76,14 +76,13 @@ fn fold_paper(points: &mut Points, folds: &Folds, times: usize) {
         }
 
         for (x, y) in folds {
-            points.remove(&(x, y));
-
             let folded_point = if axis == "y" {
                 (x, height - y)
             } else {
                 (width - x, y)
             };
 
+            points.remove(&(x, y));
             points.insert(folded_point);
         }
     }
