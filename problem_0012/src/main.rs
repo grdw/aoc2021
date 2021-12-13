@@ -9,12 +9,12 @@ fn main() {
     let cave_system = CaveSystem::from_vec(&edges);
     println!(
         "There are {:?} routes",
-        cave_system.count_paths()
+        cave_system.count_paths(true)
     );
 
     println!(
         "There are {:?} routes, if I can visit the first small cave twice",
-        cave_system.double_count_paths()
+        cave_system.count_paths(false)
     );
 }
 
@@ -138,7 +138,7 @@ impl CaveSystem<'_> {
         CaveSystem { map: map }
     }
 
-    fn count_paths(&self) -> usize {
+    fn count_paths(&self, part1: bool) -> usize {
         let mut to_visit = vec![];
         let mut routes = 0;
 
@@ -155,40 +155,13 @@ impl CaveSystem<'_> {
                 for neighbor in neighbors {
                     let condition = match neighbor {
                         &Cave::Big(_) | &Cave::End => true,
-                        &Cave::Small(_) => !route.contains(&neighbor),
-                        _ => false
-                    };
-
-                    if condition {
-                        let mut new_route = route.clone();
-                        new_route.push(neighbor);
-                        to_visit.push(new_route);
-                    }
-                }
-            }
-        }
-
-        routes
-    }
-
-    fn double_count_paths(&self) -> usize {
-        let mut to_visit = vec![];
-        let mut routes = 0;
-
-        to_visit.push(vec![&Cave::Start]);
-
-        while let Some(route) = to_visit.pop() {
-            let current = route[route.len() - 1];
-
-            if &Cave::End == current {
-                routes += 1;
-            }
-
-            if let Some(neighbors) = self.map.get(current) {
-                for neighbor in neighbors {
-                    let condition = match neighbor {
-                        &Cave::Big(_) | &Cave::End => true,
-                        &Cave::Small(_) => double_visit(&route, neighbor),
+                        &Cave::Small(_) => {
+                            if part1 {
+                                !route.contains(&neighbor)
+                            } else {
+                                double_visit(&route, neighbor)
+                            }
+                        },
                         _ => false
                     };
 
@@ -231,8 +204,8 @@ fn test_passage_pathing_example() {
         Some(&vec![Cave::Big("A"), Cave::Small("d"), Cave::End])
     );
     assert_eq!(system.map.get(&Cave::End), None);
-    assert_eq!(system.count_paths(), 10);
-    assert_eq!(system.double_count_paths(), 36);
+    assert_eq!(system.count_paths(true), 10);
+    assert_eq!(system.count_paths(false), 36);
 }
 
 #[test]
@@ -272,7 +245,7 @@ fn test_passage_pathing_complex_example() {
         system.map.get(&Cave::End),
         None
     );
-    assert_eq!(system.count_paths(), 19);
+    assert_eq!(system.count_paths(true), 19);
 }
 
 #[test]
@@ -299,5 +272,5 @@ fn test_passage_pathing_more_complex_example() {
     ];
 
     let system = CaveSystem::from_vec(&complex_example);
-    assert_eq!(system.count_paths(), 226);
+    assert_eq!(system.count_paths(true), 226);
 }
