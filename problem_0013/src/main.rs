@@ -59,8 +59,16 @@ fn display_paper(points: &Points) {
 fn fold_paper(points: &mut Points, folds: &Folds, times: usize) {
     for i in 0..times {
         let (axis, value) = folds[i];
-        let height = points.iter().map(|n| n.1).max().unwrap();
-        let width = points.iter().map(|n| n.0).max().unwrap();
+        let mut height = points.iter().map(|n| n.1).max().unwrap();
+        let mut width = points.iter().map(|n| n.0).max().unwrap();
+
+        if height % 2 != 0 {
+            height += 1;
+        }
+
+        if width % 2 != 0 {
+            width += 1;
+        }
 
         let mut folds: Points = HashSet::new();
         let mut unfolds: Points = HashSet::new();
