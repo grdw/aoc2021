@@ -9,7 +9,7 @@ fn main() {
     let cave_system = CaveSystem::from_vec(&edges);
     println!(
         "There are {:?} routes",
-        cave_system.count_paths(&Cave::Start)
+        cave_system.count_paths()
     );
 
     //println!(
@@ -124,11 +124,11 @@ impl CaveSystem<'_> {
         CaveSystem { map: map }
     }
 
-    fn count_paths(&self, start: &Cave) -> usize {
+    fn count_paths(&self) -> usize {
         let mut to_visit = vec![];
         let mut routes = 0;
 
-        to_visit.push(vec![start]);
+        to_visit.push(vec![&Cave::Start]);
 
         while let Some(route) = to_visit.pop() {
             let current = route[route.len() - 1];
@@ -212,7 +212,7 @@ fn test_passage_pathing_example() {
         Some(&vec![Cave::Big("A"), Cave::Small("d"), Cave::End])
     );
     assert_eq!(system.map.get(&Cave::End), None);
-    assert_eq!(system.count_paths(&Cave::Start), 10);
+    assert_eq!(system.count_paths(), 10);
     //assert_eq!(system.double_count_paths("start"), 36);
 }
 
