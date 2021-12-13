@@ -111,7 +111,7 @@ impl CaveSystem<'_> {
                 }
             }
 
-            if nodes[1] != "end" && nodes[0] != "start" {
+            if right_cave != Cave::End && left_cave != Cave::Start {
                 match map.get_mut(&right_cave) {
                     Some(n) => { n.push(left_cave); },
                     None => {
