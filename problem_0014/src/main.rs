@@ -57,6 +57,7 @@ fn parse(template: &String, rules: &Rules, count: usize) -> u128 {
 
             let left_pos = keys.iter().position(|&&k| k == left).unwrap();
             let right_pos = keys.iter().position(|&&k| k == right).unwrap();
+
             curr_arr[left_pos] += diff[i];
             curr_arr[right_pos] += diff[i];
         }
@@ -65,25 +66,26 @@ fn parse(template: &String, rules: &Rules, count: usize) -> u128 {
     count_chars(template, rules, &curr_arr, &keys)
 }
 
-fn count_chars(
-    template: &String,
-    rules: &Rules,
-    curr_arr: &Vec<u128>,
-    keys: &Vec<&&str>) -> u128 {
+fn count_chars(template: &String,
+               rules: &Rules,
+               curr_arr: &Vec<u128>,
+               keys: &Vec<&&str>) -> u128 {
 
     let mut counts: HashMap<char, u128> = HashMap::new();
+
     // Count the initial characters of "template"
     for c in template.chars() {
-        let p = counts.entry(c).or_insert(0);
-        *p += 1
+        let counter = counts.entry(c).or_insert(0);
+        *counter += 1
     }
 
-    // Add the characters from the amount of cycles
+    // Add the characters from the amount of rule changes
+    // that were imposed.
     for i in 0..curr_arr.len() {
         let key = keys[i];
         let cha = rules.get(key).unwrap();
-        let p = counts.entry(*cha).or_insert(0);
-        *p += curr_arr[i]
+        let counter = counts.entry(*cha).or_insert(0);
+        *counter += curr_arr[i]
     }
 
     let min = counts.values().min().unwrap();
