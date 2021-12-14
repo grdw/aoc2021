@@ -48,9 +48,8 @@ fn parse(template: &String,
     for i in 0..template.len() - 1 {
         let key = &template[i..i + 2];
 
-        match cycle_counts.get_mut(key) {
-            Some(p) => *p += 1,
-            None => ()
+        if let Some(p) = cycle_counts.get_mut(key) {
+            *p += 1
         }
     }
 
