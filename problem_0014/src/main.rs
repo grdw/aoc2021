@@ -20,14 +20,24 @@ fn main() {
     let count = parse(&template, &rules, 10);
 
     println!("Part 1: {}", count);
+
+    let count = parse(&template, &rules, 40);
+    println!("Part 2: {}", count);
 }
 
 fn parse(
     template: &String,
     rules: &HashMap<&str, char>,
-    count: usize) -> usize {
+    count: usize) -> u128 {
 
-    let mut counts = HashMap::new();
+    let mut counts: HashMap<char, u128> = HashMap::new();
+    let mut cycle_counts: HashMap<&str, u128> = HashMap::new();
+
+    for key in rules.keys() {
+        cycle_counts.insert(*key, 0);
+    }
+
+    let mut prev_counts = cycle_counts.clone();
 
     // Setup
     for c in template.chars() {
@@ -35,29 +45,59 @@ fn parse(
         *p += 1
     }
 
-    let mut keys = vec![];
-
     for i in 0..template.len() - 1 {
-        keys.push(&template[i..i + 2]);
+        let key = &template[i..i + 2];
+
+        match cycle_counts.get_mut(key) {
+            Some(p) => *p += 1,
+            None => ()
+        }
     }
 
-    println!("{:?} {:?}", counts, keys);
+    let keys: Vec<&&str> = rules.keys().collect();
 
-    for _ in 0..10 {
-        for k in &keys {
-            println!("{}", rules.get(k).unwrap());
+    for _ in 0..count-1 {
+        let mut diff = HashMap::new();
+
+        for i in 0..keys.len() {
+            let k = keys[i];
+            let v = cycle_counts.get(k).unwrap();
+            let prev_v = prev_counts.get(k).unwrap();
+
+            if v > prev_v {
+                diff.insert(k, v - prev_v);
+            }
         }
-        //    match rules.get(key) {
-        //        Some(c) => {
-        //            insertions.insert(0, (i + 1, c))
-        //        },
-        //        None => ()
-        //    }
-        //}
 
-        //for (i, c) in insertions {
-        //    template.insert(i, *c);
-        //}
+        prev_counts = cycle_counts.clone();
+
+        for (k, v) in &diff {
+            let p = rules.get(&k as &str).unwrap();
+            let l = format!("{}{}", k.chars().nth(0).unwrap(), p);
+            let r = format!("{}{}", p, k.chars().nth(1).unwrap());
+
+            match cycle_counts.get_mut(&l as &str) {
+                Some(p) => *p += v,
+                None => ()
+            }
+
+            match cycle_counts.get_mut(&r as &str) {
+                Some(p) => *p += v,
+                None => ()
+            }
+        }
+    }
+
+    for (k, v) in &cycle_counts {
+        match rules.get(k) {
+            Some(c) => {
+                match counts.get_mut(c) {
+                    Some(n) => *n += v,
+                    None => { counts.insert(*c, *v); }
+                }
+            },
+            None => ()
+        }
     }
 
     let min = counts.values().min().unwrap();
@@ -90,4 +130,7 @@ fn test_rules() {
 
     let count = parse(&mut start, &parse_rules, 10);
     assert_eq!(count, 1588);
+
+    let count = parse(&mut start, &parse_rules, 40);
+    assert_eq!(count, 2188189693529);
 }
