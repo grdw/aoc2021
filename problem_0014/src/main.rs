@@ -30,20 +30,21 @@ fn parse(
     rules: &HashMap<&str, char>,
     count: usize) -> u128 {
 
+    let keys: Vec<&&str> = rules.keys().collect();
     let mut counts: HashMap<char, u128> = HashMap::new();
     let mut cycle_counts: HashMap<&str, u128> = HashMap::new();
-
-    for key in rules.keys() {
-        cycle_counts.insert(*key, 0);
-    }
-
-    let mut prev_counts = cycle_counts.clone();
 
     // Setup
     for c in template.chars() {
         let p = counts.entry(c).or_insert(0);
         *p += 1
     }
+
+    for key in &keys {
+        cycle_counts.insert(*key, 0);
+    }
+
+    let mut prev_counts = cycle_counts.clone();
 
     for i in 0..template.len() - 1 {
         let key = &template[i..i + 2];
@@ -53,8 +54,6 @@ fn parse(
             None => ()
         }
     }
-
-    let keys: Vec<&&str> = rules.keys().collect();
 
     for _ in 0..count-1 {
         let mut diff = HashMap::new();
