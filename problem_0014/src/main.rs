@@ -1,6 +1,8 @@
 use std::fs;
 use std::collections::HashMap;
 
+type Rules<'a> = HashMap<&'a str, char>;
+
 fn main() {
     let input = fs::read_to_string("input")
                    .unwrap_or("".to_string());
@@ -25,55 +27,49 @@ fn main() {
     println!("Part 2: {}", count);
 }
 
-fn parse(template: &String,
-    rules: &HashMap<&str, char>,
-    count: usize) -> u128 {
-
+fn parse(template: &String, rules: &Rules, count: usize) -> u128 {
     let keys: Vec<&&str> = rules.keys().collect();
-    let mut cycle_counts: HashMap<&str, u128> = HashMap::new();
-    let mut prev_counts: HashMap<&str, u128> = HashMap::new();
-
-    for key in &keys {
-        cycle_counts.insert(*key, 0);
-    }
+    let mut prev_arr: Vec<u128> = vec![0; keys.len()];
+    let mut curr_arr: Vec<u128> = vec![0; keys.len()];
 
     for i in 0..template.len() - 1 {
         let key = &template[i..i + 2];
+        let pos = keys.iter().position(|&&k| k == key).unwrap();
 
-        if let Some(p) = cycle_counts.get_mut(key) {
-            *p += 1
-        }
+        curr_arr[pos] += 1;
     }
 
     for _ in 0..count-1 {
-        let mut diff = HashMap::new();
+        let diff: Vec<u128> = curr_arr
+            .iter()
+            .enumerate()
+            .map(|(i, b)| b - prev_arr[i])
+            .collect();
 
-        for i in 0..keys.len() {
-            let k = keys[i];
-            let v = cycle_counts.get(k).unwrap_or(&0);
-            let prev_v = prev_counts.get(k).unwrap_or(&0);
+        prev_arr = curr_arr.clone();
 
-            if v > prev_v {
-                diff.insert(k, v - prev_v);
-            }
-        }
+        for i in 0..diff.len() {
+            let key = keys[i];
+            let change = rules.get(key).unwrap();
 
-        prev_counts = cycle_counts.clone();
+            let left = format!("{}{}", &key[0..1], change);
+            let right = format!("{}{}", change, &key[1..2]);
 
-        for (k, v) in &diff {
-            let p = rules.get(&k as &str).unwrap();
-            let l = format!("{}{}", k.chars().nth(0).unwrap(), p);
-            let r = format!("{}{}", p, k.chars().nth(1).unwrap());
-
-            if let Some(p) = cycle_counts.get_mut(&l as &str) {
-                *p += v
-            }
-
-            if let Some(p) = cycle_counts.get_mut(&r as &str) {
-                *p += v
-            }
+            let left_pos = keys.iter().position(|&&k| k == left).unwrap();
+            let right_pos = keys.iter().position(|&&k| k == right).unwrap();
+            curr_arr[left_pos] += diff[i];
+            curr_arr[right_pos] += diff[i];
         }
     }
+
+    count_chars(template, rules, &curr_arr, &keys)
+}
+
+fn count_chars(
+    template: &String,
+    rules: &Rules,
+    curr_arr: &Vec<u128>,
+    keys: &Vec<&&str>) -> u128 {
 
     let mut counts: HashMap<char, u128> = HashMap::new();
     // Count the initial characters of "template"
@@ -83,11 +79,11 @@ fn parse(template: &String,
     }
 
     // Add the characters from the amount of cycles
-    for (k, v) in &cycle_counts {
-        if let Some(c) = rules.get(k) {
-            let p = counts.entry(*c).or_insert(0);
-            *p += v
-        }
+    for i in 0..curr_arr.len() {
+        let key = keys[i];
+        let cha = rules.get(key).unwrap();
+        let p = counts.entry(*cha).or_insert(0);
+        *p += curr_arr[i]
     }
 
     let min = counts.values().min().unwrap();
