@@ -30,7 +30,6 @@ fn parse(template: &String,
     count: usize) -> u128 {
 
     let keys: Vec<&&str> = rules.keys().collect();
-    let mut counts: HashMap<char, u128> = HashMap::new();
     let mut cycle_counts: HashMap<&str, u128> = HashMap::new();
     let mut prev_counts: HashMap<&str, u128> = HashMap::new();
 
@@ -76,6 +75,7 @@ fn parse(template: &String,
         }
     }
 
+    let mut counts: HashMap<char, u128> = HashMap::new();
     // Count the initial characters of "template"
     for c in template.chars() {
         let p = counts.entry(c).or_insert(0);
