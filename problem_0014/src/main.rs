@@ -16,36 +16,48 @@ fn main() {
         );
     }
 
-    let mut template = String::from("SCSCSKKVVBKVFKSCCSOV");
-    for _ in 0..10 {
-        parse(&mut template, &rules);
-    }
+    let template = String::from("SCSCSKKVVBKVFKSCCSOV");
+    let count = parse(&template, &rules, 10);
 
-    println!("Part 1: {}", quantify(template));
+    println!("Part 1: {}", count);
 }
 
-fn parse(template: &mut String, rules: &HashMap<&str, char>) {
-    let mut insertions = vec![];
+fn parse(
+    template: &String,
+    rules: &HashMap<&str, char>,
+    count: usize) -> usize {
 
-    for i in 0..template.len() - 1 {
-        let key = &template[i..i + 2];
-
-        match rules.get(key) {
-            Some(c) => insertions.insert(0, (i + 1, c)),
-            None => ()
-        }
-    }
-
-    for (i, c) in insertions {
-        template.insert(i, *c);
-    }
-}
-
-fn quantify(template: String) -> usize {
     let mut counts = HashMap::new();
+
+    // Setup
     for c in template.chars() {
         let p = counts.entry(c).or_insert(0);
         *p += 1
+    }
+
+    let mut keys = vec![];
+
+    for i in 0..template.len() - 1 {
+        keys.push(&template[i..i + 2]);
+    }
+
+    println!("{:?} {:?}", counts, keys);
+
+    for _ in 0..10 {
+        for k in &keys {
+            println!("{}", rules.get(k).unwrap());
+        }
+        //    match rules.get(key) {
+        //        Some(c) => {
+        //            insertions.insert(0, (i + 1, c))
+        //        },
+        //        None => ()
+        //    }
+        //}
+
+        //for (i, c) in insertions {
+        //    template.insert(i, *c);
+        //}
     }
 
     let min = counts.values().min().unwrap();
@@ -76,9 +88,6 @@ fn test_rules() {
         ("CN", 'C')
     ]);
 
-    for _ in 0..10 {
-        parse(&mut start, &parse_rules);
-    }
-    assert_eq!(start.len(), 3073);
-    assert_eq!(quantify(start), 1588);
+    let count = parse(&mut start, &parse_rules, 10);
+    assert_eq!(count, 1588);
 }
