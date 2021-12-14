@@ -32,18 +32,11 @@ fn parse(template: &String,
     let keys: Vec<&&str> = rules.keys().collect();
     let mut counts: HashMap<char, u128> = HashMap::new();
     let mut cycle_counts: HashMap<&str, u128> = HashMap::new();
-
-    // Setup
-    for c in template.chars() {
-        let p = counts.entry(c).or_insert(0);
-        *p += 1
-    }
+    let mut prev_counts: HashMap<&str, u128> = HashMap::new();
 
     for key in &keys {
         cycle_counts.insert(*key, 0);
     }
-
-    let mut prev_counts = cycle_counts.clone();
 
     for i in 0..template.len() - 1 {
         let key = &template[i..i + 2];
@@ -58,8 +51,8 @@ fn parse(template: &String,
 
         for i in 0..keys.len() {
             let k = keys[i];
-            let v = cycle_counts.get(k).unwrap();
-            let prev_v = prev_counts.get(k).unwrap();
+            let v = cycle_counts.get(k).unwrap_or(&0);
+            let prev_v = prev_counts.get(k).unwrap_or(&0);
 
             if v > prev_v {
                 diff.insert(k, v - prev_v);
@@ -83,6 +76,13 @@ fn parse(template: &String,
         }
     }
 
+    // Count the initial characters of "template"
+    for c in template.chars() {
+        let p = counts.entry(c).or_insert(0);
+        *p += 1
+    }
+
+    // Add the characters from the amount of cycles
     for (k, v) in &cycle_counts {
         if let Some(c) = rules.get(k) {
             let p = counts.entry(*c).or_insert(0);
