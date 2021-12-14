@@ -25,8 +25,7 @@ fn main() {
     println!("Part 2: {}", count);
 }
 
-fn parse(
-    template: &String,
+fn parse(template: &String,
     rules: &HashMap<&str, char>,
     count: usize) -> u128 {
 
@@ -75,27 +74,20 @@ fn parse(
             let l = format!("{}{}", k.chars().nth(0).unwrap(), p);
             let r = format!("{}{}", p, k.chars().nth(1).unwrap());
 
-            match cycle_counts.get_mut(&l as &str) {
-                Some(p) => *p += v,
-                None => ()
+            if let Some(p) = cycle_counts.get_mut(&l as &str) {
+                *p += v
             }
 
-            match cycle_counts.get_mut(&r as &str) {
-                Some(p) => *p += v,
-                None => ()
+            if let Some(p) = cycle_counts.get_mut(&r as &str) {
+                *p += v
             }
         }
     }
 
     for (k, v) in &cycle_counts {
-        match rules.get(k) {
-            Some(c) => {
-                match counts.get_mut(c) {
-                    Some(n) => *n += v,
-                    None => { counts.insert(*c, *v); }
-                }
-            },
-            None => ()
+        if let Some(c) = rules.get(k) {
+            let p = counts.entry(*c).or_insert(0);
+            *p += v
         }
     }
 
