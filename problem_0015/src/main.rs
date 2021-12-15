@@ -70,43 +70,25 @@ fn test_to_grid() {
 
 fn to_graph(grid: &Grid) -> Edges {
     let size = grid.len();
-
+    let directions: Vec<(isize, isize)> = vec![
+        (-1, 0), (0, -1), (1, 0), (0, 1)
+    ];
     let mut edges: Edges = vec![vec![]; size.pow(2)];
 
     for y in 0..size {
         for x in 0..size {
             let current = &grid[y][x];
+            let x = x as isize;
+            let y = y as isize;
 
-            if y > 0 {
-                if let Some(row) = grid.get(y - 1) {
-                    edges[current.0].push(Edge(
-                        row[x].0,
-                        row[x].1 as usize
-                    ));
+            for (dy, dx) in &directions {
+                if let Some(row) = grid.get((y + dy) as usize) {
+                    if let Some(cell) = row.get((x + dx) as usize) {
+                        edges[current.0].push(
+                            Edge(cell.0, cell.1)
+                        );
+                    }
                 }
-            }
-
-            if x > 0 {
-                if let Some(cell) = grid[y].get(x - 1) {
-                    edges[current.0].push(Edge(
-                        cell.0,
-                        cell.1 as usize
-                    ));
-                }
-            }
-
-            if let Some(row) = grid.get(y + 1) {
-                edges[current.0].push(Edge(
-                    row[x].0,
-                    row[x].1 as usize
-                ));
-            }
-
-            if let Some(cell) = grid[y].get(x + 1) {
-                edges[current.0].push(Edge(
-                    cell.0,
-                    cell.1 as usize
-                ));
             }
         }
     }
