@@ -51,14 +51,14 @@ fn to_graph(input: &str) -> Edges {
             if let Some(row) = grid.get(y + 1) {
                 edges[current.0].push(Edge(
                     row[x].0,
-                    (current.1 + row[x].1) as usize
+                    row[x].1 as usize
                 ));
             }
 
             if let Some(cell) = grid[y].get(x + 1) {
                 edges[current.0].push(Edge(
                     cell.0,
-                    (current.1 + cell.1) as usize
+                    cell.1 as usize
                 ));
             }
         }
@@ -99,7 +99,7 @@ fn risk_level(input: &str, start: usize, goal: usize) -> Option<usize> {
     heap.push(State { cost: 0, position: start });
 
     while let Some(State { cost, position }) = heap.pop() {
-        if position == goal { return Some(cost / 2); }
+        if position == goal { return Some(cost); }
         if cost > dist[position] { continue; }
 
         for edge in &edges[position] {
