@@ -18,6 +18,10 @@ fn main() {
     let graph = to_grid(&display_string, 1);
     let risk = risk_level(&graph, 0, 9999);
     println!("The risk level is: {:?}", risk);
+
+    let graph = to_grid(&display_string, 5);
+    let risk = risk_level(&graph, 0, 249_999);
+    println!("The risk level is: {:?}", risk);
 }
 
 fn to_grid(input: &str, repeat: usize) -> Grid {
@@ -168,4 +172,8 @@ fn test_fast_route() {
     let grid = to_grid(&display_string, 1);
     let risk = risk_level(&grid, 0, 99);
     assert_eq!(risk.unwrap_or(0), 40);
+
+    let grid = to_grid(&display_string, 5);
+    let risk = risk_level(&grid, 0, 2499);
+    assert_eq!(risk.unwrap_or(0), 315);
 }
