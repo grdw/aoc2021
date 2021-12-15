@@ -48,6 +48,24 @@ fn to_graph(input: &str) -> Edges {
         for x in 0..size {
             let current = &grid[y][x];
 
+            if y > 0 {
+                if let Some(row) = grid.get(y - 1) {
+                    edges[current.0].push(Edge(
+                        row[x].0,
+                        row[x].1 as usize
+                    ));
+                }
+            }
+
+            if x > 0 {
+                if let Some(cell) = grid[y].get(x - 1) {
+                    edges[current.0].push(Edge(
+                        cell.0,
+                        cell.1 as usize
+                    ));
+                }
+            }
+
             if let Some(row) = grid.get(y + 1) {
                 edges[current.0].push(Edge(
                     row[x].0,
