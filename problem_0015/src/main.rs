@@ -15,20 +15,34 @@ fn main() {
     let display_string = fs::read_to_string("input")
                             .unwrap_or("".to_string());
 
-    let risk = risk_level(&display_string, 0, 9999);
+    let graph = to_grid(&display_string, 1);
+    let risk = risk_level(&graph, 0, 9999);
     println!("The risk level is: {:?}", risk);
 }
 
-fn to_grid(input: &str) -> Grid {
+fn to_grid(input: &str, repeat: usize) -> Grid {
+    let lines: Vec<&str> = input.split_terminator("\n").collect();
     let mut grid: Grid = vec![];
     let mut id = 0;
+    let size = lines.len();
+    let total_size = size * repeat;
 
-    for line in input.split_terminator("\n") {
+    for y in 0..total_size {
+        let line = lines[y % size];
         let mut points = vec![];
 
-        for cha in line.chars() {
+        for x in 0..total_size {
+            let cha = line.chars().nth(x % size).unwrap();
             let value = cha.to_digit(10).unwrap() as usize;
-            points.push(Node(id, value));
+            let total = value + (x / size) + (y / size);
+
+            let cost = if total < 10 {
+                total
+            } else {
+                total - 9
+            };
+
+            points.push(Node(id, cost));
             id += 1;
         }
 
@@ -38,8 +52,19 @@ fn to_grid(input: &str) -> Grid {
     grid
 }
 
-fn to_graph(input: &str) -> Edges {
-    let grid = to_grid(input);
+#[test]
+fn test_to_grid() {
+    let display_string = fs::read_to_string("test_input")
+                            .unwrap_or("".to_string());
+
+    let g = to_grid(&display_string, 5);
+    assert_eq!(g[0][11].1 - 1, g[0][0].1);
+    assert_eq!(g[11][0].1 - 1, g[0][0].1);
+    assert_eq!(g.len(), 50);
+    assert_eq!(g[0].len(), 50);
+}
+
+fn to_graph(grid: &Grid) -> Edges {
     let size = grid.len();
 
     let mut edges: Edges = vec![vec![]; size.pow(2)];
@@ -108,8 +133,8 @@ impl PartialOrd for State {
     }
 }
 
-fn risk_level(input: &str, start: usize, goal: usize) -> Option<usize> {
-    let edges = to_graph(input);
+fn risk_level(grid: &Grid, start: usize, goal: usize) -> Option<usize> {
+    let edges = to_graph(grid);
     let mut dist: Vec<_> = (0..edges.len()).map(|_| usize::MAX).collect();
     let mut heap = BinaryHeap::new();
 
@@ -140,6 +165,7 @@ fn test_fast_route() {
     let display_string = fs::read_to_string("test_input")
                             .unwrap_or("".to_string());
 
-    let risk = risk_level(&display_string, 0, 99);
+    let grid = to_grid(&display_string, 1);
+    let risk = risk_level(&grid, 0, 99);
     assert_eq!(risk.unwrap_or(0), 40);
 }
