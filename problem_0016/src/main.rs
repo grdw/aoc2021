@@ -123,39 +123,6 @@ mod p2 {
             }
         }
 
-        pub fn collapse(&mut self) -> u64 {
-            let all_leafs = self.children.iter().all(|n|
-                n.borrow().is_leaf()
-            );
-
-            if all_leafs {
-                let instr = self.instruction.as_ref().unwrap();
-                let nums = self.to_vec();
-
-                let val = match instr {
-                    Instruction::Op(0) => nums.iter().fold(0, |a, n| a + n),
-                    Instruction::Op(1) => nums.iter().fold(1, |a, n| a * n),
-                    Instruction::Op(2) => *nums.iter().max().unwrap(),
-                    Instruction::Op(3) => *nums.iter().min().unwrap(),
-                    Instruction::Op(5) => if nums[0] == nums[1] { 1 } else { 0 },
-                    Instruction::Op(6) => if nums[0] > nums[1] { 1 } else { 0 },
-                    Instruction::Op(7) => if nums[0] < nums[1] { 1 } else { 0 },
-                    Instruction::Number(n) => *n,
-                    _ => panic!("Invalid")
-                };
-
-                let inst = Instruction::Number(val);
-                println!("{} {:?}", val, inst);
-                return val
-            } else {
-                for child in &self.children {
-                    child.borrow_mut().collapse();
-                }
-            }
-
-            0
-        }
-
         fn to_vec(&self) -> Vec<u64> {
             let mut result = vec![];
             for child in &self.children {
@@ -183,6 +150,45 @@ mod p2 {
         }
     }
 
+    pub fn collapse(node: Rc<RefCell<Node>>) -> u64 {
+        let all_leafs = node.borrow().children.iter().all(|n|
+            n.borrow().is_leaf()
+        );
+
+        if all_leafs {
+            let mut n = node.borrow_mut();
+            let nums = n.to_vec();
+
+            let val = match n.instruction {
+                Some(Instruction::Op(0)) => nums.iter().fold(0, |a, n| a + n),
+                Some(Instruction::Op(1)) => nums.iter().fold(1, |a, n| a * n),
+                Some(Instruction::Op(2)) => *nums.iter().max().unwrap(),
+                Some(Instruction::Op(3)) => *nums.iter().min().unwrap(),
+                Some(Instruction::Op(5)) => if nums[0] == nums[1] { 1 } else { 0 },
+                Some(Instruction::Op(6)) => if nums[0] > nums[1] { 1 } else { 0 },
+                Some(Instruction::Op(7)) => if nums[0] < nums[1] { 1 } else { 0 },
+                Some(Instruction::Number(n)) => n,
+                _ => panic!("Invalid")
+            };
+
+            n.add_child(
+                Instruction::Number(val),
+                Some(Rc::downgrade(&node))
+            );
+
+            println!("{}", val);
+            return val
+        } else {
+            let n = node.borrow();
+            for i in 0..n.children.len() {
+                collapse(n.children[i].clone());
+            }
+        }
+
+        0
+    }
+
+
     #[test]
     fn test_unwind_sum() {
         let instruction = Instruction::Op(0);
@@ -208,8 +214,7 @@ mod p2 {
         //    let n = p.upgrade();
         //    println!("{:?}", n.unwrap());
         //}
-        let mut node = Node::rc_root();
-        let sum = root.borrow_mut().collapse(node);
+        let sum = collapse(root);
         assert_eq!(sum, 36);
     }
 
@@ -243,7 +248,7 @@ mod p2 {
             Some(Rc::downgrade(&add2))
         );
 
-        let sum = root.borrow_mut().collapse();
+        let sum = collapse(root);
         assert_eq!(sum, 70);
     }
 
@@ -405,7 +410,7 @@ mod p2 {
         let node = Node::rc_root();
         parse(&mut cursor, node.clone());
 
-        let total = node.borrow_mut().collapse();
+        let total = collapse(node);
         assert_eq!(total, 3);
     }
 
