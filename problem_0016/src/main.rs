@@ -181,9 +181,9 @@ mod p2 {
                 Instruction::Op(1) => nums.iter().fold(1, |a, n| a * n),
                 Instruction::Op(2) => *nums.iter().min().unwrap(),
                 Instruction::Op(3) => *nums.iter().max().unwrap(),
-                Instruction::Op(5) => if nums[0] == nums[1] { 1 } else { 0 },
+                Instruction::Op(5) => if nums[0] < nums[1] { 1 } else { 0 },
                 Instruction::Op(6) => if nums[0] > nums[1] { 1 } else { 0 },
-                Instruction::Op(7) => if nums[0] < nums[1] { 1 } else { 0 },
+                Instruction::Op(7) => if nums[0] == nums[1] { 1 } else { 0 },
                 Instruction::Number(val) => val,
                 _ => panic!("Invalid")
             };
