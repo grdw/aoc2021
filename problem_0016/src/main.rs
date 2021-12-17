@@ -68,7 +68,7 @@ fn read_literal_value(cursor: &mut Cursor<String>) -> u64 {
 mod p2 {
     use super::*;
     use std::rc::{Rc, Weak};
-    use std::cell::{RefCell, Cell};
+    use std::cell::RefCell;
 
     #[derive(Debug, Clone, Eq, PartialEq)]
     pub enum Instruction {
@@ -85,14 +85,6 @@ mod p2 {
     }
 
     impl Node {
-        pub fn rc_node(instruction: Instruction) -> Rc<RefCell<Node>> {
-            Rc::new(
-                RefCell::new(
-                    Node::node(instruction, None)
-                )
-            )
-        }
-
         pub fn rc_root() -> Rc<RefCell<Node>> {
             Rc::new(
                 RefCell::new(
@@ -188,7 +180,6 @@ mod p2 {
 
     #[test]
     fn test_unwind_sum() {
-        let instruction = Instruction::Op(0);
         let root = Node::rc_root();
         let add_root = root.borrow_mut().add_child(Instruction::Op(0), &root);
         add_root.borrow_mut().add_child(Instruction::Number(25), &add_root);
