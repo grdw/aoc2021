@@ -4,21 +4,48 @@ fn main() {
     let x_range = 143..=177;
     let y_range = -106..=-71;
 
-    println!("The max height is: {}", max_probe(x_range, y_range));
+    println!("The max height is: {}", max_probe(&x_range, &y_range));
+    println!("The amount of probes are: {}", num_probes(&x_range, &y_range));
+}
+
+fn num_probes(
+    target_x: &RangeInclusive<i16>,
+    target_y: &RangeInclusive<i16>
+) -> i16 {
+    let max = *target_x.end();
+    let mut count = 0;
+
+    for x in 1..=max {
+        for y in *target_y.start()..=max {
+            let p = probe(x, y, &target_x, &target_y);
+            if p.is_some() {
+                count += 1;
+            }
+        }
+    }
+
+    count
+}
+
+#[test]
+fn test_num_probes() {
+    let range_x = 20..=30;
+    let range_y = -10..=-5;
+    assert_eq!(num_probes(&range_x, &range_y), 112);
 }
 
 fn max_probe(
-    target_x: RangeInclusive<i16>,
-    target_y: RangeInclusive<i16>
+    target_x: &RangeInclusive<i16>,
+    target_y: &RangeInclusive<i16>
 ) -> i16 {
     let max = *target_x.end();
     let mut m = 0;
     for x in 1..max {
         for y in 1..max {
-            let max_p = probe(x, y, &target_x, &target_y);
-
-            if max_p > m {
-                m = max_p;
+            if let Some(max_p) = probe(x, y, &target_x, &target_y) {
+                if max_p > m {
+                    m = max_p;
+                }
             }
         }
     }
@@ -28,7 +55,9 @@ fn max_probe(
 
 #[test]
 fn test_max_probe() {
-    assert_eq!(max_probe(20..=30, -10..=-5), 45);
+    let range_x = 20..=30;
+    let range_y = -10..=-5;
+    assert_eq!(max_probe(&range_x, &range_y), 45);
 }
 
 fn probe(
@@ -36,9 +65,8 @@ fn probe(
     mut y_vel: i16,
     target_x: &RangeInclusive<i16>,
     target_y: &RangeInclusive<i16>,
-) -> i16 {
+) -> Option<i16> {
     let (mut x, mut y) = (0, 0);
-    let mut steps = 0;
     let mut max_y = 0;
 
     loop {
@@ -57,14 +85,12 @@ fn probe(
             max_y = y;
         }
 
-        steps += 1;
-
         if &x > target_x.end() || &y < target_y.start() {
-            break 0
+            break None
         }
 
         if target_x.contains(&x) && target_y.contains(&y) {
-            break max_y
+            break Some(max_y)
         }
     }
 }
@@ -73,9 +99,9 @@ fn probe(
 fn test_probe() {
     let range_x = 20..=30;
     let range_y = -10..=-5;
-    assert_eq!(probe(7, 2, &range_x, &range_y), 3);
-    assert_eq!(probe(6, 3, &range_x, &range_y), 6);
-    assert_eq!(probe(9, 0, &range_x, &range_y), 0);
-    assert_eq!(probe(17, -4, &range_x, &range_y), 0);
-    assert_eq!(probe(6, 9, &range_x, &range_y), 45);
+    assert_eq!(probe(7, 2, &range_x, &range_y), Some(3));
+    assert_eq!(probe(6, 3, &range_x, &range_y), Some(6));
+    assert_eq!(probe(9, 0, &range_x, &range_y), Some(0));
+    assert_eq!(probe(17, -4, &range_x, &range_y), None);
+    assert_eq!(probe(6, 9, &range_x, &range_y), Some(45));
 }
