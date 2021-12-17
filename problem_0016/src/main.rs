@@ -151,7 +151,7 @@ mod p2 {
 
     pub fn collapse(
         rc_node: Rc<RefCell<Node>>,
-        result: Rc<RefCell<Node>>) {
+        result: Rc<RefCell<Node>>) -> Rc<RefCell<Node>> {
         let node = rc_node.borrow_mut();
 
         if node.all_leafs() {
@@ -170,27 +170,23 @@ mod p2 {
             result.borrow_mut().add_child(
                 Instruction::Number(val), &result
             );
+            result
         } else {
             let n = match node.instruction {
                 Instruction::Op(n) => {
                     result.borrow_mut().add_child(Instruction::Op(n), &result)
                 },
-                _ => result
+                _ => result.clone()
             };
 
             for i in 0..node.children.len() {
                 collapse(node.children[i].clone(), n.clone());
             }
+            result
         }
     }
 
-    //fn recurse_collapse(rc_node: Rc<RefCell<Node>>) {
-    //    let new_node = Node::rc_root();
-    //    collapse(rc_node.clone(), new_node.clone());
-    //    let new_new_node = Node::rc_root();
-    //    collapse(new_node.clone(), new_new_node.clone());
-
-    //    let number = new_new_node.borrow().read_value();
+    //fn recurse_collapse(rc_node: Rc<RefCell<Node>>) -> u64 {
     //}
 
     #[test]
@@ -220,10 +216,8 @@ mod p2 {
         add2.borrow_mut().add_child(Instruction::Number(6), &add2);
         add2.borrow_mut().add_child(Instruction::Number(4), &add2);
 
-        let new_node = Node::rc_root();
-        collapse(root, new_node.clone());
-        let new_new_node = Node::rc_root();
-        collapse(new_node.clone(), new_new_node.clone());
+        let result_node = collapse(root, Node::rc_root());
+        let new_new_node = collapse(result_node, Node::rc_root());
 
         let number = new_new_node.borrow().read_value();
         assert_eq!(number, Some(70));
