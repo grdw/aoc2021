@@ -16,28 +16,8 @@ fn main() {
     cursor.set_position(0);
     let node = p2::Node::rc_root();
     p2::parse(&mut cursor, node.clone());
-    let mut result = p2::collapse(node.clone(), p2::Node::rc_root());
-    result = p2::collapse(result, p2::Node::rc_root());
-    result = p2::collapse(result, p2::Node::rc_root());
-    result = p2::collapse(result, p2::Node::rc_root());
-    result = p2::collapse(result, p2::Node::rc_root());
-    result = p2::collapse(result, p2::Node::rc_root());
-    result = p2::collapse(result, p2::Node::rc_root());
-    result = p2::collapse(result, p2::Node::rc_root());
-    result = p2::collapse(result, p2::Node::rc_root());
-    result = p2::collapse(result, p2::Node::rc_root());
-    result = p2::collapse(result, p2::Node::rc_root());
-    result = p2::collapse(result, p2::Node::rc_root());
-    result = p2::collapse(result, p2::Node::rc_root());
-    result = p2::collapse(result, p2::Node::rc_root());
-    result = p2::collapse(result, p2::Node::rc_root());
-    result = p2::collapse(result, p2::Node::rc_root());
-    result = p2::collapse(result, p2::Node::rc_root());
-    result = p2::collapse(result, p2::Node::rc_root());
-    result = p2::collapse(result, p2::Node::rc_root());
-    result = p2::collapse(result, p2::Node::rc_root());
-    result = p2::collapse(result, p2::Node::rc_root());
-    println!("Part 2: {:?}", result.borrow().read_value());
+    let result = p2::recurse_collapse(node.clone());
+    println!("Part 2: {:?}", result);
 }
 
 fn bytes_to_bin(bytes: &[u8]) -> Cursor<String> {
@@ -181,8 +161,8 @@ mod p2 {
                 Instruction::Op(1) => nums.iter().fold(1, |a, n| a * n),
                 Instruction::Op(2) => *nums.iter().min().unwrap(),
                 Instruction::Op(3) => *nums.iter().max().unwrap(),
-                Instruction::Op(5) => if nums[0] < nums[1] { 1 } else { 0 },
-                Instruction::Op(6) => if nums[0] > nums[1] { 1 } else { 0 },
+                Instruction::Op(5) => if nums[0] > nums[1] { 1 } else { 0 },
+                Instruction::Op(6) => if nums[0] < nums[1] { 1 } else { 0 },
                 Instruction::Op(7) => if nums[0] == nums[1] { 1 } else { 0 },
                 Instruction::Number(val) => val,
                 _ => panic!("Invalid")
@@ -207,7 +187,7 @@ mod p2 {
         }
     }
 
-    fn recurse_collapse(rc_node: Rc<RefCell<Node>>) -> u64 {
+    pub fn recurse_collapse(rc_node: Rc<RefCell<Node>>) -> u64 {
         if let Some(n) = rc_node.borrow().read_value() {
             n
         } else {
@@ -275,7 +255,7 @@ mod p2 {
         max.borrow_mut().add_child(Instruction::Number(25), &max);
         max.borrow_mut().add_child(Instruction::Number(10), &max);
 
-        assert_eq!(recurse_collapse(root), 0);
+        assert_eq!(recurse_collapse(root), 1);
     }
 
     #[test]
@@ -285,7 +265,7 @@ mod p2 {
         max.borrow_mut().add_child(Instruction::Number(25), &max);
         max.borrow_mut().add_child(Instruction::Number(10), &max);
 
-        assert_eq!(recurse_collapse(root), 1);
+        assert_eq!(recurse_collapse(root), 0);
     }
 
     #[test]
@@ -381,6 +361,61 @@ mod p2 {
 
         let number = recurse_collapse(node);
         assert_eq!(number, 9);
+    }
+
+    #[test]
+    fn test_parse_complex_4() {
+        let bytes = "880086C3E88112".as_bytes();
+        let mut cursor = bytes_to_bin(&bytes);
+        let node = Node::rc_root();
+        parse(&mut cursor, node.clone());
+
+        let number = recurse_collapse(node);
+        assert_eq!(number, 7);
+    }
+
+    #[test]
+    fn test_parse_complex_5() {
+        let bytes = "D8005AC2A8F0".as_bytes();
+        let mut cursor = bytes_to_bin(&bytes);
+        let node = Node::rc_root();
+        parse(&mut cursor, node.clone());
+
+        let number = recurse_collapse(node);
+        assert_eq!(number, 1);
+    }
+
+    #[test]
+    fn test_parse_complex_6() {
+        let bytes = "9C005AC2F8F0".as_bytes();
+        let mut cursor = bytes_to_bin(&bytes);
+        let node = Node::rc_root();
+        parse(&mut cursor, node.clone());
+
+        let number = recurse_collapse(node);
+        assert_eq!(number, 0);
+    }
+
+    #[test]
+    fn test_parse_complex_7() {
+        let bytes = "F600BC2D8F".as_bytes();
+        let mut cursor = bytes_to_bin(&bytes);
+        let node = Node::rc_root();
+        parse(&mut cursor, node.clone());
+
+        let number = recurse_collapse(node);
+        assert_eq!(number, 0);
+    }
+
+    #[test]
+    fn test_parse_complex_8() {
+        let bytes = "04005AC33890".as_bytes();
+        let mut cursor = bytes_to_bin(&bytes);
+        let node = Node::rc_root();
+        parse(&mut cursor, node.clone());
+
+        let number = recurse_collapse(node);
+        assert_eq!(number, 54);
     }
 }
 
