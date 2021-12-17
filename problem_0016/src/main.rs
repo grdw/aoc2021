@@ -140,6 +140,10 @@ mod p2 {
             }
         }
 
+        fn all_leafs(&self) -> bool {
+            self.children.iter().all(|n| n.borrow().is_leaf())
+        }
+
         fn is_leaf(&self) -> bool {
             self.children.is_empty()
         }
@@ -147,11 +151,8 @@ mod p2 {
 
     pub fn collapse(rc_node: Rc<RefCell<Node>>) -> u64 {
         let mut node = rc_node.borrow_mut();
-        let all_leafs = node.children.iter().all(|n|
-            n.borrow().is_leaf()
-        );
 
-        if all_leafs {
+        if node.all_leafs() {
             let nums = node.to_vec();
 
             let val = match node.instruction {
