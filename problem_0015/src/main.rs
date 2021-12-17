@@ -84,9 +84,7 @@ fn to_graph(grid: &Grid) -> Edges {
             for (dy, dx) in &directions {
                 if let Some(row) = grid.get((y + dy) as usize) {
                     if let Some(cell) = row.get((x + dx) as usize) {
-                        edges[current.0].push(
-                            Edge(cell.0, cell.1)
-                        );
+                        edges[current.0].push(Edge(cell.0, cell.1));
                     }
                 }
             }
