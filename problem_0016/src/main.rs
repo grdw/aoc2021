@@ -13,12 +13,11 @@ fn main() {
     p1::parse(&mut cursor, &mut counter);
     println!("Part 1: {}", counter);
 
-    let mut instructions = vec![];
-    let mut values = vec![];
-    let mut depth = 0;
     cursor.set_position(0);
-    p2::parse(&mut cursor, &mut instructions, &mut values, &mut depth);
-    println!("Part 2: {:?}", p2::unwind(&instructions));
+    let node = p2::Node::rc_root();
+    p2::parse(&mut cursor, node.clone());
+    println!("{:?}", node);
+    //println!("Part 2: {:?}", p2::unwind(&instructions));
 }
 
 fn bytes_to_bin(bytes: &[u8]) -> Cursor<String> {
@@ -68,199 +67,217 @@ fn read_literal_value(cursor: &mut Cursor<String>) -> u64 {
 
 mod p2 {
     use super::*;
+    use std::rc::Rc;
+    use std::cell::RefCell;
 
     #[derive(Debug, Clone, Eq, PartialEq)]
-    pub enum Instruction<'a> {
+    pub enum Instruction {
         Number(u64),
-        Op(&'a str, Vec<Instruction<'a>>)
+        Op(u64)
     }
 
-    fn compound<'a>(op: &str, numbers: &Vec<Instruction>) -> Instruction<'a> {
-        let mut nums = vec![];
-        for number in numbers {
-            match number {
-                Instruction::Number(n) => nums.push(*n),
-                _ => ()
-            }
+    #[derive(Debug)]
+    pub struct Node {
+        children: Vec<Rc<RefCell<Node>>>,
+        instruction: Option<Instruction>
+    }
+
+    impl Node {
+        pub fn node(instruction: Option<Instruction>) -> Node {
+            Node { children: vec![], instruction: instruction }
         }
 
-        let val = match op {
-            "+"   => nums.iter().fold(0, |a, n| a + n),
-            "*"   => nums.iter().fold(1, |a, n| a * n),
-            "max" => *nums.iter().max().unwrap(),
-            "min" => *nums.iter().min().unwrap(),
-            "="   => if nums[0] == nums[1] { 1 } else { 0 },
-            ">"   => if nums[0] > nums[1] { 1 } else { 0 },
-            "<"   => if nums[0] < nums[1] { 1 } else { 0 },
-            _ => panic!("YEEEEEET")
-
-        };
-
-        Instruction::Number(val)
-    }
-
-    pub fn unwind(instructions: &Vec<Instruction>) -> u64 {
-        let mut depth = 0;
-        let mut nums = vec![];
-
-        println!("{:?}", instructions);
-        for instruction in instructions {
-        //while let Some(instruction) = navigations.pop() {
-            //let instruction = &instructions[i];
-
-            match instruction {
-                Instruction::Op(op, instructions) => {
-                    if let Instruction::Op(_, p) = instructions.last().unwrap() {
-                        unwind(p);
-                    } else {
-                        let comp = compound(&op, &instructions);
-                        println!("{:?}", comp);
-                        nums.push(comp);
-                    }
-                },
-                _ => panic!("Ne pas possible")
-            }
+        pub fn rc_node(instruction: Instruction) -> Rc<RefCell<Node>> {
+            Rc::new(
+                RefCell::new(
+                    Node::node(Some(instruction))
+                )
+            )
         }
 
-        0
+        pub fn rc_root() -> Rc<RefCell<Node>> {
+            Rc::new(
+                RefCell::new(
+                    Node::node(None)
+                )
+            )
+        }
+
+        pub fn add_child(
+            &mut self,
+            instruction: Instruction) -> Rc<RefCell<Node>> {
+
+            let rc = Rc::new(
+                RefCell::new(
+                    Node::node(Some(instruction))
+                )
+            );
+
+            self.children.push(rc.clone());
+            rc
+        }
+
+        pub fn collapse(&mut self) -> u64 {
+            if self.children.is_empty() {
+                // Over here these will always be numbers
+                println!("{:?}", self);
+            } else {
+                let instr = self.instruction.as_ref().unwrap();
+                for child in &self.children {
+                    child.borrow_mut().collapse();
+                }
+            }
+            0
+        }
     }
+
+    //fn compound(op: &str, numbers: &Instruction) -> Instruction {
+    //    let mut nums = vec![];
+    //    for number in numbers {
+    //        match number {
+    //            Instruction::Number(n) => nums.push(*n),
+    //            _ => ()
+    //        }
+    //    }
+
+    //    let val = match op {
+    //        "+"   => nums.iter().fold(0, |a, n| a + n),
+    //        "*"   => nums.iter().fold(1, |a, n| a * n),
+    //        "max" => *nums.iter().max().unwrap(),
+    //        "min" => *nums.iter().min().unwrap(),
+    //        "="   => if nums[0] == nums[1] { 1 } else { 0 },
+    //        ">"   => if nums[0] > nums[1] { 1 } else { 0 },
+    //        "<"   => if nums[0] < nums[1] { 1 } else { 0 },
+    //        _ => panic!("YEEEEEET")
+
+    //    };
+
+    //    Instruction::Number(val)
+    //}
 
     #[test]
     fn test_unwind_sum() {
-        let instructions = vec![
-            Instruction::Op("+", vec![
-                Instruction::Number(25),
-                Instruction::Number(10),
-                Instruction::Number(11)
-            ])
-        ];
+        let instruction = Instruction::Op(0);
+        let root = Node::rc_node(instruction);
+        root.borrow_mut().add_child(Instruction::Number(25));
+        root.borrow_mut().add_child(Instruction::Number(10));
+        root.borrow_mut().add_child(Instruction::Number(1));
 
-        assert_eq!(unwind(&instructions), 46);
+        let sum = root.borrow_mut().collapse();
+        assert_eq!(sum, 46);
     }
 
-    #[test]
-    fn test_unwind_multiply() {
-        let instructions = vec![
-            Instruction::Op("*", vec![
-                Instruction::Number(25),
-                Instruction::Number(10),
-                Instruction::Number(1)
-            ])
-        ];
+    //#[test]
+    //fn test_unwind_multiply() {
+    //    let instructions = vec![
+    //        Instruction::Op("*", vec![
+    //            Instruction::Number(25),
+    //            Instruction::Number(10),
+    //            Instruction::Number(1)
+    //        ])
+    //    ];
 
-        assert_eq!(unwind(&instructions), 250);
-    }
+    //    assert_eq!(unwind(&instructions), 250);
+    //}
 
-    #[test]
-    fn test_unwind_max() {
-        let instructions = vec![
-            Instruction::Op("max", vec![
-                Instruction::Number(25),
-                Instruction::Number(10),
-                Instruction::Number(1)
-            ])
-        ];
+    //#[test]
+    //fn test_unwind_max() {
+    //    let instructions = vec![
+    //        Instruction::Op("max", vec![
+    //            Instruction::Number(25),
+    //            Instruction::Number(10),
+    //            Instruction::Number(1)
+    //        ])
+    //    ];
 
-        assert_eq!(unwind(&instructions), 25);
-    }
+    //    assert_eq!(unwind(&instructions), 25);
+    //}
 
-    #[test]
-    fn test_unwind_min() {
-        let instructions = vec![
-            Instruction::Op("min", vec![
-                Instruction::Number(25),
-                Instruction::Number(10),
-                Instruction::Number(1)
-            ])
-        ];
+    //#[test]
+    //fn test_unwind_min() {
+    //    let instructions = vec![
+    //        Instruction::Op("min", vec![
+    //            Instruction::Number(25),
+    //            Instruction::Number(10),
+    //            Instruction::Number(1)
+    //        ])
+    //    ];
 
-        assert_eq!(unwind(&instructions), 1);
-    }
+    //    assert_eq!(unwind(&instructions), 1);
+    //}
 
-    #[test]
-    fn test_unwind_gt() {
-        let instructions = vec![
-            Instruction::Op(">", vec![
-                Instruction::Number(25),
-                Instruction::Number(10)
-            ])
-        ];
+    //#[test]
+    //fn test_unwind_gt() {
+    //    let instructions = vec![
+    //        Instruction::Op(">", vec![
+    //            Instruction::Number(25),
+    //            Instruction::Number(10)
+    //        ])
+    //    ];
 
-        assert_eq!(unwind(&instructions), 1);
-    }
+    //    assert_eq!(unwind(&instructions), 1);
+    //}
 
-    #[test]
-    fn test_unwind_lt() {
-        let instructions = vec![
-            Instruction::Op("<", vec![
-                Instruction::Number(25),
-                Instruction::Number(10)
-            ])
-        ];
+    //#[test]
+    //fn test_unwind_lt() {
+    //    let instructions = vec![
+    //        Instruction::Op("<", vec![
+    //            Instruction::Number(25),
+    //            Instruction::Number(10)
+    //        ])
+    //    ];
 
-        assert_eq!(unwind(&instructions), 0);
-    }
+    //    assert_eq!(unwind(&instructions), 0);
+    //}
 
 
-    #[test]
-    fn test_unwind_eq() {
-        let instructions = vec![
-            Instruction::Op("=", vec![
-                Instruction::Number(25),
-                Instruction::Number(10)
-            ])
-        ];
+    //#[test]
+    //fn test_unwind_eq() {
+    //    let instructions = vec![
+    //        Instruction::Op("=", vec![
+    //            Instruction::Number(25),
+    //            Instruction::Number(10)
+    //        ])
+    //    ];
 
-        assert_eq!(unwind(&instructions), 0);
-    }
+    //    assert_eq!(unwind(&instructions), 0);
+    //}
 
-    #[test]
-    fn test_unwind_recurse() {
-        let instructions = vec![
-            Instruction::Op("multiply", vec![
-                Instruction::Op(">", vec![
-                    Instruction::Number(25),
-                    Instruction::Number(10)
-                ]),
-                Instruction::Op("<", vec![
-                    Instruction::Number(1),
-                    Instruction::Number(10)
+    //#[test]
+    //fn test_unwind_recurse() {
+    //    let instructions = vec![
+    //        Instruction::Op("multiply", vec![
+    //            Instruction::Op(">", vec![
+    //                Instruction::Number(25),
+    //                Instruction::Number(10)
+    //            ]),
+    //            Instruction::Op("<", vec![
+    //                Instruction::Number(1),
+    //                Instruction::Number(10)
 
-                ])
-            ])
-        ];
+    //            ])
+    //        ])
+    //    ];
 
-        assert_eq!(unwind(&instructions), 1);
-    }
+    //    assert_eq!(unwind(&instructions), 1);
+    //}
 
     pub fn parse(
         cursor: &mut Cursor<String>,
-        instructions: &mut Vec<Instruction>,
-        values: &mut Vec<u64>,
-        depth: &mut usize
+        node: Rc<RefCell<Node>>
     ) {
         let _version = read_ahead(cursor, 3);
         let type_id = read_ahead(cursor, 3);
 
         if type_id == 4 {
             let value = read_literal_value(cursor);
-
-            instructions.push(Instruction::Number(value));
+            let number = Instruction::Number(value);
+            node.borrow_mut().add_child(number);
         } else {
             let type_length_id = read_ahead(cursor, 1);
 
-            let instruction = match type_id {
-                0 => "+",
-                1 => "*",
-                2 => "min",
-                3 => "max",
-                5 => ">",
-                6 => "<",
-                7 => "=",
-                _ => panic!("invalid type_id")
-            };
-
-            instructions.push(Instruction::Op(instruction, vec![]));
+            let operation = Instruction::Op(type_id);
+            let child = node.borrow_mut().add_child(operation);
 
             if type_length_id == 0 {
                 let total_length = read_ahead(cursor, 15);
@@ -268,9 +285,7 @@ mod p2 {
                 parse_with_read_limit(
                     cursor,
                     total_length,
-                    instructions,
-                    values,
-                    depth
+                    child
                 );
             } else if type_length_id == 1 {
                 let number_of_packs = read_ahead(cursor, 11);
@@ -278,9 +293,7 @@ mod p2 {
                 parse_with_packet_limit(
                     cursor,
                     number_of_packs,
-                    instructions,
-                    values,
-                    depth
+                    child
                 );
             }
         }
@@ -289,29 +302,25 @@ mod p2 {
     fn parse_with_read_limit(
         cursor: &mut Cursor<String>,
         limit: u64,
-        instructions: &mut Vec<Instruction>,
-        values: &mut Vec<u64>,
-        depth: &mut usize
+        node: Rc<RefCell<Node>>
     ) {
         let curr_poss = cursor.position();
         let limit = curr_poss + limit;
 
         while cursor.position() < limit {
-            parse(cursor, instructions, values, depth);
+            parse(cursor, node.clone());
         }
     }
 
     fn parse_with_packet_limit(
         cursor: &mut Cursor<String>,
         limit: u64,
-        instructions: &mut Vec<Instruction>,
-        values: &mut Vec<u64>,
-        depth: &mut usize
+        node: Rc<RefCell<Node>>
     ) {
         let mut count = 0;
 
         while count < limit {
-            parse(cursor, instructions, values, depth);
+            parse(cursor, node.clone());
             count += 1;
         }
     }
@@ -320,23 +329,22 @@ mod p2 {
     fn test_parse_complex_1() {
         let bytes = "C200B40A82".as_bytes();
         let mut cursor = bytes_to_bin(&bytes);
-        let mut values: Vec<u64> = vec![];
-        let mut instructions: Vec<Instruction> = vec![];
-        parse(&mut cursor, &mut instructions, &mut values, &mut 0);
+        let node = Node::rc_root();
+        parse(&mut cursor, node.clone());
 
-        assert_eq!(unwind(&instructions), 3);
+        let total = node.borrow_mut().collapse();
+        assert_eq!(total, 3);
     }
 
-    #[test]
-    fn test_parse_complex_2() {
-        let bytes = "9C0141080250320F1802104A08".as_bytes();
-        let mut cursor = bytes_to_bin(&bytes);
-        let mut values: Vec<u64> = vec![];
-        let mut instructions: Vec<Instruction> = vec![];
-        parse(&mut cursor, &mut instructions, &mut values, &mut 0);
+    //#[test]
+    //fn test_parse_complex_2() {
+    //    let bytes = "9C0141080250320F1802104A08".as_bytes();
+    //    let mut cursor = bytes_to_bin(&bytes);
+    //    let mut instructions: Vec<Instruction> = vec![];
+    //    parse(&mut cursor, &mut instructions);
 
-        assert_eq!(unwind(&instructions), 1);
-    }
+    //    assert_eq!(unwind(&instructions), 1);
+    //}
 
     //#[test]
     //fn test_parse_complex_3() {
