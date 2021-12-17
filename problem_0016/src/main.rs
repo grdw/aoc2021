@@ -16,8 +16,28 @@ fn main() {
     cursor.set_position(0);
     let node = p2::Node::rc_root();
     p2::parse(&mut cursor, node.clone());
-    println!("{:?}", node);
-    //println!("Part 2: {:?}", p2::unwind(&instructions));
+    let mut result = p2::collapse(node.clone(), p2::Node::rc_root());
+    result = p2::collapse(result, p2::Node::rc_root());
+    result = p2::collapse(result, p2::Node::rc_root());
+    result = p2::collapse(result, p2::Node::rc_root());
+    result = p2::collapse(result, p2::Node::rc_root());
+    result = p2::collapse(result, p2::Node::rc_root());
+    result = p2::collapse(result, p2::Node::rc_root());
+    result = p2::collapse(result, p2::Node::rc_root());
+    result = p2::collapse(result, p2::Node::rc_root());
+    result = p2::collapse(result, p2::Node::rc_root());
+    result = p2::collapse(result, p2::Node::rc_root());
+    result = p2::collapse(result, p2::Node::rc_root());
+    result = p2::collapse(result, p2::Node::rc_root());
+    result = p2::collapse(result, p2::Node::rc_root());
+    result = p2::collapse(result, p2::Node::rc_root());
+    result = p2::collapse(result, p2::Node::rc_root());
+    result = p2::collapse(result, p2::Node::rc_root());
+    result = p2::collapse(result, p2::Node::rc_root());
+    result = p2::collapse(result, p2::Node::rc_root());
+    result = p2::collapse(result, p2::Node::rc_root());
+    result = p2::collapse(result, p2::Node::rc_root());
+    println!("Part 2: {:?}", result.borrow().read_value());
 }
 
 fn bytes_to_bin(bytes: &[u8]) -> Cursor<String> {
@@ -141,7 +161,7 @@ mod p2 {
             self.children.is_empty()
         }
 
-        fn read_value(&self) -> Option<u64> {
+        pub fn read_value(&self) -> Option<u64> {
             match &self.children[0].as_ref().borrow().instruction {
                 Instruction::Number(n) => Some(*n),
                 _ => None
@@ -152,18 +172,19 @@ mod p2 {
     pub fn collapse(
         rc_node: Rc<RefCell<Node>>,
         result: Rc<RefCell<Node>>) -> Rc<RefCell<Node>> {
-        let node = rc_node.borrow_mut();
+        let node = rc_node.borrow();
 
         if node.all_leafs() {
             let nums = node.to_vec();
             let val = match node.instruction {
                 Instruction::Op(0) => nums.iter().fold(0, |a, n| a + n),
                 Instruction::Op(1) => nums.iter().fold(1, |a, n| a * n),
-                Instruction::Op(2) => *nums.iter().max().unwrap(),
-                Instruction::Op(3) => *nums.iter().min().unwrap(),
+                Instruction::Op(2) => *nums.iter().min().unwrap(),
+                Instruction::Op(3) => *nums.iter().max().unwrap(),
                 Instruction::Op(5) => if nums[0] == nums[1] { 1 } else { 0 },
                 Instruction::Op(6) => if nums[0] > nums[1] { 1 } else { 0 },
                 Instruction::Op(7) => if nums[0] < nums[1] { 1 } else { 0 },
+                Instruction::Number(val) => val,
                 _ => panic!("Invalid")
             };
 
@@ -186,8 +207,15 @@ mod p2 {
         }
     }
 
-    //fn recurse_collapse(rc_node: Rc<RefCell<Node>>) -> u64 {
-    //}
+    fn recurse_collapse(rc_node: Rc<RefCell<Node>>) -> u64 {
+        if let Some(n) = rc_node.borrow().read_value() {
+            n
+        } else {
+            recurse_collapse(
+                collapse(rc_node.clone(), Node::rc_root())
+            )
+        }
+    }
 
     #[test]
     fn test_unwind_sum() {
@@ -207,7 +235,6 @@ mod p2 {
     #[test]
     fn test_unwind_multiply() {
         let root = Node::rc_root();
-
         let mul1 = root.borrow_mut().add_child(Instruction::Op(1), &root);
         let add1 = mul1.borrow_mut().add_child(Instruction::Op(0), &mul1);
         let add2 = mul1.borrow_mut().add_child(Instruction::Op(0), &mul1);
@@ -216,94 +243,60 @@ mod p2 {
         add2.borrow_mut().add_child(Instruction::Number(6), &add2);
         add2.borrow_mut().add_child(Instruction::Number(4), &add2);
 
-        let mut result_node = collapse(root, Node::rc_root());
-        result_node = collapse(result_node, Node::rc_root());
-
-        let number = result_node.borrow().read_value();
-        assert_eq!(number, Some(70));
+        assert_eq!(recurse_collapse(root), 70);
     }
 
-    //#[test]
-    //fn test_unwind_max() {
-    //    let instructions = vec![
-    //        Instruction::Op("max", vec![
-    //            Instruction::Number(25),
-    //            Instruction::Number(10),
-    //            Instruction::Number(1)
-    //        ])
-    //    ];
+    #[test]
+    fn test_unwind_max() {
+        let root = Node::rc_root();
+        let max = root.borrow_mut().add_child(Instruction::Op(3), &root);
+        max.borrow_mut().add_child(Instruction::Number(25), &max);
+        max.borrow_mut().add_child(Instruction::Number(10), &max);
+        max.borrow_mut().add_child(Instruction::Number(1), &max);
 
-    //    assert_eq!(unwind(&instructions), 25);
-    //}
+        assert_eq!(recurse_collapse(root), 25);
+    }
 
-    //#[test]
-    //fn test_unwind_min() {
-    //    let instructions = vec![
-    //        Instruction::Op("min", vec![
-    //            Instruction::Number(25),
-    //            Instruction::Number(10),
-    //            Instruction::Number(1)
-    //        ])
-    //    ];
+    #[test]
+    fn test_unwind_min() {
+        let root = Node::rc_root();
+        let max = root.borrow_mut().add_child(Instruction::Op(2), &root);
+        max.borrow_mut().add_child(Instruction::Number(25), &max);
+        max.borrow_mut().add_child(Instruction::Number(10), &max);
+        max.borrow_mut().add_child(Instruction::Number(1), &max);
 
-    //    assert_eq!(unwind(&instructions), 1);
-    //}
+        assert_eq!(recurse_collapse(root), 1);
+    }
 
-    //#[test]
-    //fn test_unwind_gt() {
-    //    let instructions = vec![
-    //        Instruction::Op(">", vec![
-    //            Instruction::Number(25),
-    //            Instruction::Number(10)
-    //        ])
-    //    ];
+    #[test]
+    fn test_unwind_gt() {
+        let root = Node::rc_root();
+        let max = root.borrow_mut().add_child(Instruction::Op(5), &root);
+        max.borrow_mut().add_child(Instruction::Number(25), &max);
+        max.borrow_mut().add_child(Instruction::Number(10), &max);
 
-    //    assert_eq!(unwind(&instructions), 1);
-    //}
+        assert_eq!(recurse_collapse(root), 0);
+    }
 
-    //#[test]
-    //fn test_unwind_lt() {
-    //    let instructions = vec![
-    //        Instruction::Op("<", vec![
-    //            Instruction::Number(25),
-    //            Instruction::Number(10)
-    //        ])
-    //    ];
+    #[test]
+    fn test_unwind_lt() {
+        let root = Node::rc_root();
+        let max = root.borrow_mut().add_child(Instruction::Op(6), &root);
+        max.borrow_mut().add_child(Instruction::Number(25), &max);
+        max.borrow_mut().add_child(Instruction::Number(10), &max);
 
-    //    assert_eq!(unwind(&instructions), 0);
-    //}
+        assert_eq!(recurse_collapse(root), 1);
+    }
 
+    #[test]
+    fn test_unwind_eq() {
+        let root = Node::rc_root();
+        let max = root.borrow_mut().add_child(Instruction::Op(7), &root);
+        max.borrow_mut().add_child(Instruction::Number(25), &max);
+        max.borrow_mut().add_child(Instruction::Number(10), &max);
 
-    //#[test]
-    //fn test_unwind_eq() {
-    //    let instructions = vec![
-    //        Instruction::Op("=", vec![
-    //            Instruction::Number(25),
-    //            Instruction::Number(10)
-    //        ])
-    //    ];
-
-    //    assert_eq!(unwind(&instructions), 0);
-    //}
-
-    //#[test]
-    //fn test_unwind_recurse() {
-    //    let instructions = vec![
-    //        Instruction::Op("multiply", vec![
-    //            Instruction::Op(">", vec![
-    //                Instruction::Number(25),
-    //                Instruction::Number(10)
-    //            ]),
-    //            Instruction::Op("<", vec![
-    //                Instruction::Number(1),
-    //                Instruction::Number(10)
-
-    //            ])
-    //        ])
-    //    ];
-
-    //    assert_eq!(unwind(&instructions), 1);
-    //}
+        assert_eq!(recurse_collapse(root), 0);
+    }
 
     pub fn parse(cursor: &mut Cursor<String>, node: Rc<RefCell<Node>>) {
         let _version = read_ahead(cursor, 3);
@@ -363,32 +356,32 @@ mod p2 {
         let mut cursor = bytes_to_bin(&bytes);
         let node = Node::rc_root();
         parse(&mut cursor, node.clone());
-        println!("{:?}", node);
 
-        //let total = collapse(node);
-        //assert_eq!(total, 3);
+        let number = recurse_collapse(node);
+        assert_eq!(number, 3);
     }
 
-    //#[test]
-    //fn test_parse_complex_2() {
-    //    let bytes = "9C0141080250320F1802104A08".as_bytes();
-    //    let mut cursor = bytes_to_bin(&bytes);
-    //    let mut instructions: Vec<Instruction> = vec![];
-    //    parse(&mut cursor, &mut instructions);
+    #[test]
+    fn test_parse_complex_2() {
+        let bytes = "9C0141080250320F1802104A08".as_bytes();
+        let mut cursor = bytes_to_bin(&bytes);
+        let node = Node::rc_root();
+        parse(&mut cursor, node.clone());
 
-    //    assert_eq!(unwind(&instructions), 1);
-    //}
+        let number = recurse_collapse(node);
+        assert_eq!(number, 1);
+    }
 
-    //#[test]
-    //fn test_parse_complex_3() {
-    //    let bytes = "CE00C43D881120".as_bytes();
-    //    let mut cursor = bytes_to_bin(&bytes);
-    //    let mut values: Vec<u64> = vec![];
-    //    let mut instructions: Vec<Instruction> = vec![];
-    //    parse(&mut cursor, &mut instructions, &mut values, &mut 0);
+    #[test]
+    fn test_parse_complex_3() {
+        let bytes = "CE00C43D881120".as_bytes();
+        let mut cursor = bytes_to_bin(&bytes);
+        let node = Node::rc_root();
+        parse(&mut cursor, node.clone());
 
-    //    assert_eq!(unwind(&mut instructions, &mut vec![], &mut 0), 9);
-    //}
+        let number = recurse_collapse(node);
+        assert_eq!(number, 9);
+    }
 }
 
 
