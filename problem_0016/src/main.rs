@@ -67,7 +67,7 @@ fn read_literal_value(cursor: &mut Cursor<String>) -> u64 {
 
 mod p2 {
     use super::*;
-    use std::rc::Rc;
+    use std::rc::{Rc, Weak};
     use std::cell::RefCell;
 
     #[derive(Debug, Clone, Eq, PartialEq)]
@@ -78,6 +78,7 @@ mod p2 {
 
     #[derive(Debug)]
     pub struct Node {
+        parent: Option<Weak<RefCell<Node>>>,
         children: Vec<Rc<RefCell<Node>>>,
         instruction: Option<Instruction>
     }
@@ -86,7 +87,7 @@ mod p2 {
         pub fn rc_node(instruction: Instruction) -> Rc<RefCell<Node>> {
             Rc::new(
                 RefCell::new(
-                    Node::node(Some(instruction))
+                    Node::node(Some(instruction), None)
                 )
             )
         }
@@ -94,23 +95,32 @@ mod p2 {
         pub fn rc_root() -> Rc<RefCell<Node>> {
             Rc::new(
                 RefCell::new(
-                    Node::node(None)
+                    Node::node(None, None)
                 )
             )
         }
 
         pub fn add_child(
             &mut self,
-            instruction: Instruction) -> Rc<RefCell<Node>> {
+            instruction: Instruction,
+            parent: Option<Weak<RefCell<Node>>>) -> Rc<RefCell<Node>> {
 
             let rc = Rc::new(
                 RefCell::new(
-                    Node::node(Some(instruction))
+                    Node::node(Some(instruction), parent)
                 )
             );
 
             self.children.push(rc.clone());
             rc
+        }
+
+        pub fn parent(&mut self) -> Option<Rc<RefCell<Node>>> {
+            if let Some(p) = self.parent.as_ref() {
+                p.upgrade()
+            } else {
+                None
+            }
         }
 
         pub fn collapse(&mut self) -> u64 {
@@ -130,16 +140,19 @@ mod p2 {
                     Instruction::Op(5) => if nums[0] == nums[1] { 1 } else { 0 },
                     Instruction::Op(6) => if nums[0] > nums[1] { 1 } else { 0 },
                     Instruction::Op(7) => if nums[0] < nums[1] { 1 } else { 0 },
-                    _ => panic!("YEEEEEET")
+                    Instruction::Number(n) => *n,
+                    _ => panic!("Invalid")
                 };
 
-                // Over here these will always be numbers
-                println!("{:?}", val);
+                let inst = Instruction::Number(val);
+                println!("{} {:?}", val, inst);
+                return val
             } else {
                 for child in &self.children {
                     child.borrow_mut().collapse();
                 }
             }
+
             0
         }
 
@@ -154,8 +167,15 @@ mod p2 {
             result
         }
 
-        fn node(instruction: Option<Instruction>) -> Node {
-            Node { children: vec![], instruction: instruction }
+        fn node(
+            instruction: Option<Instruction>,
+            parent: Option<Weak<RefCell<Node>>>
+        ) -> Node {
+            Node {
+                children: vec![],
+                parent: parent,
+                instruction: instruction
+            }
         }
 
         fn is_leaf(&self) -> bool {
@@ -166,27 +186,66 @@ mod p2 {
     #[test]
     fn test_unwind_sum() {
         let instruction = Instruction::Op(0);
-        let root = Node::rc_node(instruction);
-        root.borrow_mut().add_child(Instruction::Number(25));
-        root.borrow_mut().add_child(Instruction::Number(10));
-        root.borrow_mut().add_child(Instruction::Number(1));
+        let root = Node::rc_root();
+        let add_root = root.borrow_mut().add_child(
+            Instruction::Op(0),
+            Some(Rc::downgrade(&root))
+        );
+        add_root.borrow_mut().add_child(
+            Instruction::Number(25),
+            Some(Rc::downgrade(&add_root))
+        );
+        add_root.borrow_mut().add_child(
+            Instruction::Number(10),
+            Some(Rc::downgrade(&add_root))
+        );
+        add_root.borrow_mut().add_child(
+            Instruction::Number(1),
+            Some(Rc::downgrade(&add_root))
+        );
 
-        let sum = root.borrow_mut().collapse();
+        //if let Some(p) = add_root.borrow().parent.as_ref() {
+        //    let n = p.upgrade();
+        //    println!("{:?}", n.unwrap());
+        //}
+        let mut node = Node::rc_root();
+        let sum = root.borrow_mut().collapse(node);
         assert_eq!(sum, 36);
     }
 
-    //#[test]
-    //fn test_unwind_multiply() {
-    //    let instructions = vec![
-    //        Instruction::Op("*", vec![
-    //            Instruction::Number(25),
-    //            Instruction::Number(10),
-    //            Instruction::Number(1)
-    //        ])
-    //    ];
+    #[test]
+    fn test_unwind_multiply() {
+        let instruction = Instruction::Op(1);
+        let root = Node::rc_node(instruction);
 
-    //    assert_eq!(unwind(&instructions), 250);
-    //}
+        let add1 = root.borrow_mut().add_child(
+            Instruction::Op(0),
+            Some(Rc::downgrade(&root))
+        );
+        add1.borrow_mut().add_child(
+            Instruction::Number(5),
+            Some(Rc::downgrade(&add1))
+        );
+        add1.borrow_mut().add_child(
+            Instruction::Number(2),
+            Some(Rc::downgrade(&add1))
+        );
+        let add2 = root.borrow_mut().add_child(
+            Instruction::Op(0),
+            Some(Rc::downgrade(&root))
+        );
+        add2.borrow_mut().add_child(
+            Instruction::Op(6),
+            Some(Rc::downgrade(&add2))
+        );
+        add2.borrow_mut().add_child(
+            Instruction::Op(4),
+            Some(Rc::downgrade(&add2))
+        );
+
+        let sum = root.borrow_mut().collapse();
+        assert_eq!(sum, 70);
+    }
 
     //#[test]
     //fn test_unwind_max() {
@@ -280,12 +339,18 @@ mod p2 {
         if type_id == 4 {
             let value = read_literal_value(cursor);
             let number = Instruction::Number(value);
-            node.borrow_mut().add_child(number);
+            node.borrow_mut().add_child(
+                number,
+                Some(Rc::downgrade(&node))
+            );
         } else {
             let type_length_id = read_ahead(cursor, 1);
 
             let operation = Instruction::Op(type_id);
-            let child = node.borrow_mut().add_child(operation);
+            let child = node.borrow_mut().add_child(
+                operation,
+                Some(Rc::downgrade(&node))
+            );
 
             if type_length_id == 0 {
                 let total_length = read_ahead(cursor, 15);
