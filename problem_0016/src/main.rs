@@ -83,10 +83,6 @@ mod p2 {
     }
 
     impl Node {
-        pub fn node(instruction: Option<Instruction>) -> Node {
-            Node { children: vec![], instruction: instruction }
-        }
-
         pub fn rc_node(instruction: Instruction) -> Rc<RefCell<Node>> {
             Rc::new(
                 RefCell::new(
@@ -118,42 +114,54 @@ mod p2 {
         }
 
         pub fn collapse(&mut self) -> u64 {
-            if self.children.is_empty() {
-                // Over here these will always be numbers
-                println!("{:?}", self);
-            } else {
+            let all_leafs = self.children.iter().all(|n|
+                n.borrow().is_leaf()
+            );
+
+            if all_leafs {
                 let instr = self.instruction.as_ref().unwrap();
+                let nums = self.to_vec();
+
+                let val = match instr {
+                    Instruction::Op(0) => nums.iter().fold(0, |a, n| a + n),
+                    Instruction::Op(1) => nums.iter().fold(1, |a, n| a * n),
+                    Instruction::Op(2) => *nums.iter().max().unwrap(),
+                    Instruction::Op(3) => *nums.iter().min().unwrap(),
+                    Instruction::Op(5) => if nums[0] == nums[1] { 1 } else { 0 },
+                    Instruction::Op(6) => if nums[0] > nums[1] { 1 } else { 0 },
+                    Instruction::Op(7) => if nums[0] < nums[1] { 1 } else { 0 },
+                    _ => panic!("YEEEEEET")
+                };
+
+                // Over here these will always be numbers
+                println!("{:?}", val);
+            } else {
                 for child in &self.children {
                     child.borrow_mut().collapse();
                 }
             }
             0
         }
+
+        fn to_vec(&self) -> Vec<u64> {
+            let mut result = vec![];
+            for child in &self.children {
+                match child.borrow().instruction.as_ref() {
+                    Some(Instruction::Number(n)) => result.push(*n),
+                    _ => ()
+                }
+            }
+            result
+        }
+
+        fn node(instruction: Option<Instruction>) -> Node {
+            Node { children: vec![], instruction: instruction }
+        }
+
+        fn is_leaf(&self) -> bool {
+            self.children.is_empty()
+        }
     }
-
-    //fn compound(op: &str, numbers: &Instruction) -> Instruction {
-    //    let mut nums = vec![];
-    //    for number in numbers {
-    //        match number {
-    //            Instruction::Number(n) => nums.push(*n),
-    //            _ => ()
-    //        }
-    //    }
-
-    //    let val = match op {
-    //        "+"   => nums.iter().fold(0, |a, n| a + n),
-    //        "*"   => nums.iter().fold(1, |a, n| a * n),
-    //        "max" => *nums.iter().max().unwrap(),
-    //        "min" => *nums.iter().min().unwrap(),
-    //        "="   => if nums[0] == nums[1] { 1 } else { 0 },
-    //        ">"   => if nums[0] > nums[1] { 1 } else { 0 },
-    //        "<"   => if nums[0] < nums[1] { 1 } else { 0 },
-    //        _ => panic!("YEEEEEET")
-
-    //    };
-
-    //    Instruction::Number(val)
-    //}
 
     #[test]
     fn test_unwind_sum() {
@@ -164,7 +172,7 @@ mod p2 {
         root.borrow_mut().add_child(Instruction::Number(1));
 
         let sum = root.borrow_mut().collapse();
-        assert_eq!(sum, 46);
+        assert_eq!(sum, 36);
     }
 
     //#[test]
