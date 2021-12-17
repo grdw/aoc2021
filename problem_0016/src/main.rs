@@ -216,10 +216,10 @@ mod p2 {
         add2.borrow_mut().add_child(Instruction::Number(6), &add2);
         add2.borrow_mut().add_child(Instruction::Number(4), &add2);
 
-        let result_node = collapse(root, Node::rc_root());
-        let new_new_node = collapse(result_node, Node::rc_root());
+        let mut result_node = collapse(root, Node::rc_root());
+        result_node = collapse(result_node, Node::rc_root());
 
-        let number = new_new_node.borrow().read_value();
+        let number = result_node.borrow().read_value();
         assert_eq!(number, Some(70));
     }
 
