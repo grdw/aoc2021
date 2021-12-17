@@ -307,10 +307,7 @@ mod p2 {
     //    assert_eq!(unwind(&instructions), 1);
     //}
 
-    pub fn parse(
-        cursor: &mut Cursor<String>,
-        node: Rc<RefCell<Node>>
-    ) {
+    pub fn parse(cursor: &mut Cursor<String>, node: Rc<RefCell<Node>>) {
         let _version = read_ahead(cursor, 3);
         let type_id = read_ahead(cursor, 3);
 
@@ -327,19 +324,11 @@ mod p2 {
             if type_length_id == 0 {
                 let total_length = read_ahead(cursor, 15);
 
-                parse_with_read_limit(
-                    cursor,
-                    total_length,
-                    child
-                );
+                parse_with_read_limit(cursor, total_length, child);
             } else if type_length_id == 1 {
                 let number_of_packs = read_ahead(cursor, 11);
 
-                parse_with_packet_limit(
-                    cursor,
-                    number_of_packs,
-                    child
-                );
+                parse_with_packet_limit(cursor, number_of_packs, child);
             }
         }
     }
