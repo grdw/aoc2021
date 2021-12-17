@@ -141,10 +141,10 @@ mod p2 {
             self.children.is_empty()
         }
 
-        fn read_value(&self) -> u64 {
+        fn read_value(&self) -> Option<u64> {
             match &self.children[0].as_ref().borrow().instruction {
-                Instruction::Number(n) => *n,
-                _ => 0
+                Instruction::Number(n) => Some(*n),
+                _ => None
             }
         }
     }
@@ -171,12 +171,27 @@ mod p2 {
                 Instruction::Number(val), &result
             );
         } else {
-            println!("{:?}", node.instruction);
+            let n = match node.instruction {
+                Instruction::Op(n) => {
+                    result.borrow_mut().add_child(Instruction::Op(n), &result)
+                },
+                _ => result
+            };
+
             for i in 0..node.children.len() {
-                collapse(node.children[i].clone(), result.clone());
+                collapse(node.children[i].clone(), n.clone());
             }
         }
     }
+
+    //fn recurse_collapse(rc_node: Rc<RefCell<Node>>) {
+    //    let new_node = Node::rc_root();
+    //    collapse(rc_node.clone(), new_node.clone());
+    //    let new_new_node = Node::rc_root();
+    //    collapse(new_node.clone(), new_new_node.clone());
+
+    //    let number = new_new_node.borrow().read_value();
+    //}
 
     #[test]
     fn test_unwind_sum() {
@@ -190,42 +205,29 @@ mod p2 {
         collapse(root, new_node.clone());
         let number = new_node.borrow().read_value();
 
-        assert_eq!(number, 36);
+        assert_eq!(number, Some(36));
     }
 
-    //#[test]
-    //fn test_unwind_multiply() {
-    //    let instruction = Instruction::Op(1);
-    //    let root = Node::rc_node(instruction);
+    #[test]
+    fn test_unwind_multiply() {
+        let root = Node::rc_root();
 
-    //    let add1 = root.borrow_mut().add_child(
-    //        Instruction::Op(0),
-    //        Some(Rc::downgrade(&root))
-    //    );
-    //    add1.borrow_mut().add_child(
-    //        Instruction::Number(5),
-    //        Some(Rc::downgrade(&add1))
-    //    );
-    //    add1.borrow_mut().add_child(
-    //        Instruction::Number(2),
-    //        Some(Rc::downgrade(&add1))
-    //    );
-    //    let add2 = root.borrow_mut().add_child(
-    //        Instruction::Op(0),
-    //        Some(Rc::downgrade(&root))
-    //    );
-    //    add2.borrow_mut().add_child(
-    //        Instruction::Op(6),
-    //        Some(Rc::downgrade(&add2))
-    //    );
-    //    add2.borrow_mut().add_child(
-    //        Instruction::Op(4),
-    //        Some(Rc::downgrade(&add2))
-    //    );
+        let mul1 = root.borrow_mut().add_child(Instruction::Op(1), &root);
+        let add1 = mul1.borrow_mut().add_child(Instruction::Op(0), &mul1);
+        let add2 = mul1.borrow_mut().add_child(Instruction::Op(0), &mul1);
+        add1.borrow_mut().add_child(Instruction::Number(5), &add1);
+        add1.borrow_mut().add_child(Instruction::Number(2), &add1);
+        add2.borrow_mut().add_child(Instruction::Number(6), &add2);
+        add2.borrow_mut().add_child(Instruction::Number(4), &add2);
 
-    //    let sum = collapse(root);
-    //    assert_eq!(sum, 70);
-    //}
+        let new_node = Node::rc_root();
+        collapse(root, new_node.clone());
+        let new_new_node = Node::rc_root();
+        collapse(new_node.clone(), new_new_node.clone());
+
+        let number = new_new_node.borrow().read_value();
+        assert_eq!(number, Some(70));
+    }
 
     //#[test]
     //fn test_unwind_max() {
