@@ -69,74 +69,70 @@ fn read_literal_value(cursor: &mut Cursor<String>) -> u64 {
 mod p2 {
     use super::*;
 
-    #[derive(Debug)]
+    #[derive(Debug, Clone, Eq, PartialEq)]
     pub enum Instruction<'a> {
         Number(u64),
-        Op(&'a str, Option<u64>)
+        Op(&'a str, Vec<Instruction<'a>>)
     }
 
-    pub fn unwind(instructions: &Vec<Instruction>) -> u64 {
-        let mut values = vec![];
-        let mut operations = vec![];
-
-        for i in 0..instructions.len() {
-            let inst = &instructions[i];
-
-            match inst {
-                Instruction::Op(op, default) => {
-                    operations.push(*op);
-                    match default {
-                        Some(val) => values.push(*val),
-                        None => ()
-                    }
-                },
-                Instruction::Number(n) => {
-                    let op = operations.pop().unwrap();
-                    let val = values.pop().unwrap();
-
-                    println!("{} {} {}", val, op, n);
-                    match op {
-                        "+" => {
-                            values.push(val + n);
-                            operations.push("+");
-                        },
-                        "*" => {
-                            values.push(val * n);
-                            operations.push("*");
-                        },
-                        "max" => {
-                            if *n > val {
-                                values.push(*n);
-                            } else {
-                                values.push(val);
-                            }
-                            operations.push("max");
-                        },
-                        "min" => {
-                            if *n < val {
-                                values.push(*n);
-                            } else {
-                                values.push(val);
-                            }
-                            operations.push("min");
-                        }
-                        _ => panic!("INVALID")
-                    }
-                }
+    fn compound<'a>(op: &str, numbers: &Vec<Instruction>) -> Instruction<'a> {
+        let mut nums = vec![];
+        for number in numbers {
+            match number {
+                Instruction::Number(n) => nums.push(*n),
+                _ => ()
             }
         }
 
-        println!("{:?}", values);
-        values[0]
+        let val = match op {
+            "+"   => nums.iter().fold(0, |a, n| a + n),
+            "*"   => nums.iter().fold(1, |a, n| a * n),
+            "max" => *nums.iter().max().unwrap(),
+            "min" => *nums.iter().min().unwrap(),
+            "="   => if nums[0] == nums[1] { 1 } else { 0 },
+            ">"   => if nums[0] > nums[1] { 1 } else { 0 },
+            "<"   => if nums[0] < nums[1] { 1 } else { 0 },
+            _ => panic!("YEEEEEET")
+
+        };
+
+        Instruction::Number(val)
+    }
+
+    pub fn unwind(instructions: &Vec<Instruction>) -> u64 {
+        let mut depth = 0;
+        let mut nums = vec![];
+
+        println!("{:?}", instructions);
+        for instruction in instructions {
+        //while let Some(instruction) = navigations.pop() {
+            //let instruction = &instructions[i];
+
+            match instruction {
+                Instruction::Op(op, instructions) => {
+                    if let Instruction::Op(_, p) = instructions.last().unwrap() {
+                        unwind(p);
+                    } else {
+                        let comp = compound(&op, &instructions);
+                        println!("{:?}", comp);
+                        nums.push(comp);
+                    }
+                },
+                _ => panic!("Ne pas possible")
+            }
+        }
+
+        0
     }
 
     #[test]
     fn test_unwind_sum() {
         let instructions = vec![
-            Instruction::Op("+", Some(0)),
-            Instruction::Number(25),
-            Instruction::Number(10),
-            Instruction::Number(11)
+            Instruction::Op("+", vec![
+                Instruction::Number(25),
+                Instruction::Number(10),
+                Instruction::Number(11)
+            ])
         ];
 
         assert_eq!(unwind(&instructions), 46);
@@ -145,10 +141,11 @@ mod p2 {
     #[test]
     fn test_unwind_multiply() {
         let instructions = vec![
-            Instruction::Op("*", Some(1)),
-            Instruction::Number(25),
-            Instruction::Number(10),
-            Instruction::Number(1)
+            Instruction::Op("*", vec![
+                Instruction::Number(25),
+                Instruction::Number(10),
+                Instruction::Number(1)
+            ])
         ];
 
         assert_eq!(unwind(&instructions), 250);
@@ -157,10 +154,11 @@ mod p2 {
     #[test]
     fn test_unwind_max() {
         let instructions = vec![
-            Instruction::Op("max", Some(0)),
-            Instruction::Number(25),
-            Instruction::Number(10),
-            Instruction::Number(1)
+            Instruction::Op("max", vec![
+                Instruction::Number(25),
+                Instruction::Number(10),
+                Instruction::Number(1)
+            ])
         ];
 
         assert_eq!(unwind(&instructions), 25);
@@ -169,30 +167,70 @@ mod p2 {
     #[test]
     fn test_unwind_min() {
         let instructions = vec![
-            Instruction::Op("min", Some(u64::MAX)),
-            Instruction::Number(25),
-            Instruction::Number(10),
-            Instruction::Number(1)
+            Instruction::Op("min", vec![
+                Instruction::Number(25),
+                Instruction::Number(10),
+                Instruction::Number(1)
+            ])
         ];
 
         assert_eq!(unwind(&instructions), 1);
     }
 
     #[test]
-    fn test_unwind_recurse() {
+    fn test_unwind_gt() {
         let instructions = vec![
-            Instruction::Op("multiply", Some(1)),
-            Instruction::Op("min", Some(u64::MAX)),
-            Instruction::Number(25),
-            Instruction::Number(10),
-            Instruction::Number(1),
-            Instruction::Op("min", Some(u64::MAX)),
-            Instruction::Number(25),
-            Instruction::Number(10),
-            Instruction::Number(2)
+            Instruction::Op(">", vec![
+                Instruction::Number(25),
+                Instruction::Number(10)
+            ])
         ];
 
-        assert_eq!(unwind(&instructions), 2);
+        assert_eq!(unwind(&instructions), 1);
+    }
+
+    #[test]
+    fn test_unwind_lt() {
+        let instructions = vec![
+            Instruction::Op("<", vec![
+                Instruction::Number(25),
+                Instruction::Number(10)
+            ])
+        ];
+
+        assert_eq!(unwind(&instructions), 0);
+    }
+
+
+    #[test]
+    fn test_unwind_eq() {
+        let instructions = vec![
+            Instruction::Op("=", vec![
+                Instruction::Number(25),
+                Instruction::Number(10)
+            ])
+        ];
+
+        assert_eq!(unwind(&instructions), 0);
+    }
+
+    #[test]
+    fn test_unwind_recurse() {
+        let instructions = vec![
+            Instruction::Op("multiply", vec![
+                Instruction::Op(">", vec![
+                    Instruction::Number(25),
+                    Instruction::Number(10)
+                ]),
+                Instruction::Op("<", vec![
+                    Instruction::Number(1),
+                    Instruction::Number(10)
+
+                ])
+            ])
+        ];
+
+        assert_eq!(unwind(&instructions), 1);
     }
 
     pub fn parse(
@@ -211,18 +249,18 @@ mod p2 {
         } else {
             let type_length_id = read_ahead(cursor, 1);
 
-            let (instruction, default) = match type_id {
-                0 => ("+", Some(0)),
-                1 => ("*", Some(1)),
-                2 => ("min", None),
-                3 => ("max", Some(0)),
-                5 => (">", None),
-                6 => ("<", None),
-                7 => ("=", None),
+            let instruction = match type_id {
+                0 => "+",
+                1 => "*",
+                2 => "min",
+                3 => "max",
+                5 => ">",
+                6 => "<",
+                7 => "=",
                 _ => panic!("invalid type_id")
             };
 
-            instructions.push(Instruction::Op(instruction, default));
+            instructions.push(Instruction::Op(instruction, vec![]));
 
             if type_length_id == 0 {
                 let total_length = read_ahead(cursor, 15);
