@@ -48,12 +48,30 @@ fn test_sum_snailfish() {
     )
 }
 
+fn parse_layer(
+    input: &str,
+    depth: isize,
+    start: usize,
+    end: usize) -> SnailfishPart {
+
+    let n = &input[start..end];
+    let m = n.split(",").collect::<Vec<&str>>();
+
+    if m[0] == "" {
+        (depth, start+1..end)
+    } else if m[1] == "" {
+        (depth, start..end-1)
+    } else {
+        (depth, start..end)
+    }
+}
+
 fn parse_snailfish(input: &str) -> Snailfish {
     let mut result = vec![];
     let mut last = 0;
     let mut depth = 0;
 
-    for (i, matched) in input.match_indices(|c: char| !c.is_numeric()) {
+    for (i, matched) in input.match_indices(|c: char| c == '[' || c == ']') {
         let depth_incr = match matched {
             "[" => 1,
             "]" => -1,
@@ -61,7 +79,10 @@ fn parse_snailfish(input: &str) -> Snailfish {
         };
 
         if last != i {
-            result.push((depth, last..i));
+            if &input[last..i] != "," {
+                let t = parse_layer(input, depth, last, i);
+                result.push(t)
+            }
         }
 
         depth += depth_incr;
@@ -69,36 +90,33 @@ fn parse_snailfish(input: &str) -> Snailfish {
     }
 
     if last < input.len() {
-        result.push((depth, last..input.len()));
+        let t = parse_layer(input, depth, last, input.len());
+        result.push(t)
     }
 
     result
 }
 
 #[test]
-fn test_parse_snailfish() {
+fn test_parse_snailfish_1() {
     let snailfish = "[[[[0,7],4],[7,[[8,4],9]]],[1,1]]";
 
     assert_eq!(parse_snailfish(&snailfish), vec![
-        (4, 4..5),
-        (4, 6..7),
+        (4, 4..7),
         (3, 9..10),
         (3, 13..14),
-        (5, 17..18),
-        (5, 19..20),
+        (5, 17..20),
         (4, 22..23),
-        (2, 28..29),
-        (2, 30..31)
+        (2, 28..31)
     ]);
 }
 
 #[test]
 fn test_parse_snailfish_2() {
-    let snailfish = "[100,200]";
+    let snailfish = "[1,200]";
 
     assert_eq!(parse_snailfish(&snailfish), vec![
-        (1, 1..4),
-        (1, 5..8)
+        (1, 1..6),
     ]);
 }
 
@@ -109,36 +127,30 @@ fn test_parse_snailfish_3() {
     let snailfish = add(part, final_part);
 
     assert_eq!(parse_snailfish(&snailfish), vec![
-        (5, 5..6),
-        (5, 7..8),
-        (5, 11..12),
-        (5, 13..14),
-        (4, 18..19),
-        (4, 20..21),
-        (3, 25..26),
-        (3, 27..28),
-        (2, 32..33),
-        (2, 34..35)
+        (5, 5..8),
+        (5, 11..14),
+        (4, 18..21),
+        (3, 25..28),
+        (2, 32..35),
     ]);
 }
 
-fn action(input: &Snailfish) -> Action {
-    for i in 0..input.len() {
-        let (_, range) = &input[i];
+fn action<'a>(
+    input: &str,
+    parts: &'a Snailfish,
+    _previous_action: &Action) -> Action<'a> {
 
-        if range.len() > 1 {
-            return Action::Split {
-                range: &input[i]
-            }
-        }
-    }
+    //let search_splits = match previous_action {
+    //    Action::Split { range: _ }  => false,
+    //    _ => true
+    //};
 
-    for i in 0..input.len() {
-        let (depth, range) = &input[i];
+    for i in 0..parts.len() {
+        let (depth, range) = &parts[i];
 
         if *depth > 4 {
             let left = if i > 0 {
-                input.get(i - 1)
+                parts.get(i - 1)
             } else {
                 None
             };
@@ -146,7 +158,22 @@ fn action(input: &Snailfish) -> Action {
             return Action::Explode {
                 pair: range,
                 left: left,
-                right: input.get(i + 2)
+                right: parts.get(i + 1)
+            }
+        }
+    }
+
+    for i in 0..parts.len() {
+        let (_, range) = &parts[i];
+
+        let tt: Vec<u8> = input[range.start..range.end]
+            .split(",")
+            .map(|n| n.parse::<u8>().unwrap())
+            .collect();
+
+        if tt.iter().any(|&n| n > 10) {
+            return Action::Split {
+                range: &parts[i]
             }
         }
     }
@@ -156,11 +183,12 @@ fn action(input: &Snailfish) -> Action {
 
 #[test]
 fn test_action_explode() {
-    let snailfish = parse_snailfish("[[[[[9,8],1],2],3],4]");
-    let action = action(&snailfish);
+    let input = "[[[[[9,8],1],2],3],4]";
+    let snailfish = parse_snailfish(&input);
+    let action = action(&input, &snailfish, &Action::NonAction);
 
     assert_eq!(action, Action::Explode {
-        pair: &(5..6),
+        pair: &(5..8),
         left: None,
         right: Some(&(4, 10..11))
     });
@@ -168,28 +196,74 @@ fn test_action_explode() {
 
 #[test]
 fn test_action_no_action() {
-    let snailfish = parse_snailfish("[2,4]");
-    let action = action(&snailfish);
+    let input = "[2,4]";
+    let snailfish = parse_snailfish(&input);
+    let action = action(&input, &snailfish, &Action::NonAction);
 
     assert_eq!(action, Action::NonAction);
 }
 
 #[test]
-fn test_action_split() {
-    let snailfish = parse_snailfish("[[[[0,7],4],[15,[0,13]]],[1,1]]");
-    let action = action(&snailfish);
+fn test_action_split_1() {
+    let input = "[[[[0,7],4],[15,[0,13]]],[1,1]]";
+    let snailfish = parse_snailfish(&input);
+    let action = action(&input, &snailfish, &Action::NonAction);
 
     assert_eq!(action, Action::Split { range: &(3, 13..15) });
 }
 
 #[test]
 fn test_action_split_2() {
-    let snailfish = parse_snailfish(
-        "[[[[4,0],[5,4]],[[7,7],[6,0]]],[[7,[5,5]],[[5,7],[[0,11],[8,8]]]]]"
-    );
-    let action = action(&snailfish);
+    let i = "[[[[4,0],[5,4]],[[7,7],[6,0]]],[[7,[5,5]],[[5,7],[[0,11],[8,8]]]]]";
+    let snailfish = parse_snailfish(&i);
+    let action = action(&i, &snailfish, &Action::NonAction);
 
-    assert_eq!(action, Action::Split { range: &(5, 53..55) });
+    assert_eq!(action, Action::Explode {
+        pair: &(51..55),
+        left: Some(&(4, 44..47)),
+        right: Some(&(5, 58..61))
+    });
+}
+
+#[test]
+fn test_action_split_3() {
+    let i =
+        "[[[[4,0],[5,4]],[[7,7],[6,0]]],[[7,[5,5]],[[0,[11,3]],[[6,3],[8,8]]]]]";
+    let snailfish = parse_snailfish(&i);
+
+    let action = action(&i, &snailfish, &Action::Split { range: &(3, 35..37) });
+    assert_eq!(action,
+               Action::Explode {
+                   pair: &(47..51),
+                   left: Some(&(4, 44..45)),
+                   right: Some(&(5, 56..59))
+               }
+            );
+}
+
+fn directed_digit(input: &str, range: &Range<usize>, left: bool) -> u8 {
+    let d = &input[range.start..range.end];
+    let digits: Vec<u8> = digit_split(d);
+
+    if left {
+        digits[0]
+    } else {
+        match digits.get(1) {
+            Some(d) => *d,
+            None => digits[0]
+        }
+    }
+}
+
+fn digit_split(input: &str) -> Vec<u8> {
+    input.split(",").map(|n| n.parse::<u8>().unwrap()).collect()
+}
+
+#[test]
+fn test_digit_split() {
+    assert_eq!(digit_split("5"), vec![5]);
+    assert_eq!(directed_digit("5", &(0..1), true), 5);
+    assert_eq!(directed_digit("5", &(0..1), false), 5);
 }
 
 fn explode(
@@ -200,15 +274,12 @@ fn explode(
 
     let mut result = String::from(input);
 
-    let to_explode: Vec<u8> = input[pair.start..pair.end + 2]
-        .split(",")
-        .map(|n| n.parse::<u8>().unwrap())
-        .collect();
+    let to_explode: Vec<u8> = digit_split(&input[pair.start..pair.end]);
 
     match (left, right) {
         (Some((_, lran)), Some((_, rran))) => {
-            let right_t = input[rran.start..rran.end].parse::<u8>().unwrap();
-            let left_t = input[lran.start..lran.end].parse::<u8>().unwrap();
+            let right_t = directed_digit(input, rran, false);
+            let left_t = directed_digit(input, lran, true);
 
             let l_sum = format!("{}", to_explode[0] + left_t);
             let r_sum = format!("{}", to_explode[1] + right_t);
@@ -216,29 +287,25 @@ fn explode(
             result.replace_range(rran.start..rran.end, &r_sum);
             result.replace_range(lran.start..lran.end, &l_sum);
 
-            let start = pair.start - (2 - l_sum.len());
-            let end = pair.end + (2 + l_sum.len());
-            result.replace_range(start..end, "0");
+            if l_sum.len() == 2 {
+                result.replace_range(pair.start..pair.end + 2, "0");
+            } else {
+                result.replace_range(pair.start-1..pair.end + 1, "0");
+            }
         },
         (None, Some((_, ran))) => {
-            let right_t = input[ran.start..ran.end].parse::<u8>().unwrap();
+            let right_t = directed_digit(input, ran, false);
             let sum = format!("{}", to_explode[1] + right_t);
 
             result.replace_range(ran.start..ran.end, &sum);
-
-            let start = pair.start - (2 - sum.len());
-            let end = pair.end + (2 + sum.len());
-            result.replace_range(start..end, "0");
+            result.replace_range(pair.start-1..pair.end+1, "0");
         },
         (Some((_, ran)), None) => {
-            let left_t = input[ran.start..ran.end].parse::<u8>().unwrap();
+            let left_t = directed_digit(input, ran, true);
             let sum = format!("{}", to_explode[0] + left_t);
 
             result.replace_range(ran.start..ran.end, &sum);
-
-            let start = pair.start - (2 - sum.len());
-            let end = pair.end + (2 + sum.len());
-            result.replace_range(start..end, "0");
+            result.replace_range(pair.start-1..pair.end+1, "0");
         },
         _ => panic!("Invalid action"),
     }
@@ -257,10 +324,10 @@ fn split(input: &str, sfp: &SnailfishPart) -> String {
     result
 }
 
-fn execute(input: &str, action: Action) -> Option<String> {
+fn execute(input: &str, action: &Action) -> Option<String> {
     match action {
         Action::Explode { pair, left, right } =>
-            Some(explode(input, pair, left, right)),
+            Some(explode(input, pair, *left, *right)),
         Action::Split { range } => Some(split(input, range)),
         _ => None
     }
@@ -270,18 +337,18 @@ fn execute(input: &str, action: Action) -> Option<String> {
 fn test_explode_1() {
     let input = "[[[[[9,8],1],2],3],4]";
     let snailfish = parse_snailfish(&input);
-    let action = action(&snailfish);
+    let action = action(&input, &snailfish, &Action::NonAction);
 
     assert_eq!(
         action,
         Action::Explode {
-            pair: &(5..6),
+            pair: &(5..8),
             left: None,
             right: Some(&(4, 10..11))
         }
     );
 
-    let result = execute(&input, action).unwrap();
+    let result = execute(&input, &action).unwrap();
     assert_eq!(result, String::from("[[[[0,9],2],3],4]"));
 }
 
@@ -289,18 +356,18 @@ fn test_explode_1() {
 fn test_explode_2() {
     let snailfish = "[7,[6,[5,[4,[3,2]]]]]";
     let parsed = parse_snailfish(&snailfish);
-    let action = action(&parsed);
+    let action = action(&snailfish, &parsed, &Action::NonAction);
 
     assert_eq!(
         action,
         Action::Explode {
-            pair: &(13..14),
+            pair: &(13..16),
             left: Some(&(4, 10..11)),
             right: None
         }
     );
 
-    let result = execute(&snailfish, action).unwrap();
+    let result = execute(&snailfish, &action).unwrap();
     assert_eq!(result, String::from("[7,[6,[5,[7,0]]]]"))
 }
 
@@ -308,18 +375,18 @@ fn test_explode_2() {
 fn test_explode_3() {
     let snailfish = "[[6,[5,[4,[3,2]]]],1]";
     let parsed = parse_snailfish(&snailfish);
-    let action = action(&parsed);
+    let action = action(&snailfish, &parsed, &Action::NonAction);
 
     assert_eq!(
         action,
         Action::Explode {
-            pair: &(11..12),
+            pair: &(11..14),
             left: Some(&(4, 8..9)),
             right: Some(&(1, 19..20))
         }
     );
 
-    let result = execute(&snailfish, action).unwrap();
+    let result = execute(&snailfish, &action).unwrap();
     assert_eq!(result, String::from("[[6,[5,[7,0]]],3]"))
 }
 
@@ -327,18 +394,18 @@ fn test_explode_3() {
 fn test_explode_4() {
     let snailfish = "[[3,[2,[1,[7,3]]]],[6,[5,[4,[3,2]]]]]";
     let parsed = parse_snailfish(&snailfish);
-    let action = action(&parsed);
+    let action = action(&snailfish, &parsed, &Action::NonAction);
 
     assert_eq!(
         action,
         Action::Explode {
-            pair: &(11..12),
+            pair: &(11..14),
             left: Some(&(4, 8..9)),
             right: Some(&(2, 20..21))
         }
     );
 
-    let result = execute(&snailfish, action).unwrap();
+    let result = execute(&snailfish, &action).unwrap();
     assert_eq!(result, String::from("[[3,[2,[8,0]]],[9,[5,[4,[3,2]]]]]"));
 }
 
@@ -346,18 +413,18 @@ fn test_explode_4() {
 fn test_explode_5() {
     let snailfish = "[[3,[2,[8,0]]],[9,[5,[4,[3,2]]]]]";
     let parsed = parse_snailfish(&snailfish);
-    let action = action(&parsed);
+    let action = action(&snailfish, &parsed, &Action::NonAction);
 
     assert_eq!(
         action,
         Action::Explode {
-            pair: &(25..26),
+            pair: &(25..28),
             left: Some(&(4, 22..23)),
             right: None
         }
     );
 
-    let result = execute(&snailfish, action).unwrap();
+    let result = execute(&snailfish, &action).unwrap();
     assert_eq!(result, String::from("[[3,[2,[8,0]]],[9,[5,[7,0]]]]"));
 }
 
@@ -365,18 +432,18 @@ fn test_explode_5() {
 fn test_explode_6() {
     let snailfish = "[[[[0,7],4],[7,[[8,4],9]]],[1,1]]";
     let parsed = parse_snailfish(&snailfish);
-    let action = action(&parsed);
+    let action = action(&snailfish, &parsed, &Action::NonAction);
 
     assert_eq!(
         action,
         Action::Explode {
-            pair: &(17..18),
+            pair: &(17..20),
             left: Some(&(3, 13..14)),
             right: Some(&(4, 22..23))
         }
     );
 
-    let result = execute(&snailfish, action).unwrap();
+    let result = execute(&snailfish, &action).unwrap();
     assert_eq!(result, String::from("[[[[0,7],4],[15,[0,13]]],[1,1]]"));
 }
 
@@ -384,23 +451,23 @@ fn test_explode_6() {
 fn test_explode_7() {
     let snailfish = "[[[[[1,1],[2,2]],[3,3]],[4,4]],[5,5]]";
     let parsed = parse_snailfish(&snailfish);
-    let first_action = action(&parsed);
+    let first_action = action(&snailfish, &parsed, &Action::NonAction);
 
     assert_eq!(
         first_action,
         Action::Explode {
-            pair: &(5..6),
+            pair: &(5..8),
             left: None,
-            right: Some(&(5, 11..12))
+            right: Some(&(5, 11..14))
         }
     );
 
-    let result = execute(&snailfish, first_action).unwrap();
+    let result = execute(&snailfish, &first_action).unwrap();
     assert_eq!(result, String::from("[[[[0,[3,2]],[3,3]],[4,4]],[5,5]]"));
 
     let snailfish = "[[[[0,[3,2]],[3,3]],[4,4]],[5,5]]";
     let parsed = parse_snailfish(&snailfish);
-    let second_action = action(&parsed);
+    let second_action = action(&snailfish, &parsed, &Action::NonAction);
 
     assert_eq!(
         second_action,
@@ -411,7 +478,7 @@ fn test_explode_7() {
         }
     );
 
-    let result = execute(&snailfish, second_action).unwrap();
+    let result = execute(&snailfish, &second_action).unwrap();
     assert_eq!(result, String::from("[[[[3,0],[5,3]],[4,4]],[5,5]]"));
 }
 
@@ -421,18 +488,18 @@ fn test_explode_8() {
     let snailfish_2 = "[7,[[[3,7],[4,3]],[[6,3],[8,8]]]]";
     let sum = add(snailfish_1, snailfish_2);
     let parsed = parse_snailfish(&sum);
-    let action = action(&parsed);
+    let action = action(&sum, &parsed, &Action::NonAction);
 
     assert_eq!(
         action,
         Action::Explode {
-            pair: &(7..8),
+            pair: &(7..10),
             left: Some(&(4, 4..5)),
-            right: Some(&(4, 14..15))
+            right: Some(&(4, 14..17))
         }
     );
 
-    let result = execute(&sum, action).unwrap();
+    let result = execute(&sum, &action).unwrap();
     assert_eq!(
         result,
         String::from("[[[[4,0],[5,0]],[[[4,5],[2,6]],[9,5]]],[7,[[[3,7],[4,3]],[[6,3],[8,8]]]]]")
@@ -443,18 +510,18 @@ fn test_explode_8() {
 fn test_explode_9() {
     let snailfish = "[[[[0,7],4],[7,[[8,4],4]]],[1,1]]";
     let parsed = parse_snailfish(&snailfish);
-    let action = action(&parsed);
+    let action = action(&snailfish, &parsed, &Action::NonAction);
 
     assert_eq!(
         action,
         Action::Explode {
-            pair: &(17..18),
+            pair: &(17..20),
             left: Some(&(3, 13..14)),
             right: Some(&(4, 22..23))
         }
     );
 
-    let result = execute(&snailfish, action).unwrap();
+    let result = execute(&snailfish, &action).unwrap();
     assert_eq!(result, String::from("[[[[0,7],4],[15,[0,8]]],[1,1]]"));
 }
 
@@ -462,19 +529,29 @@ fn test_explode_9() {
 fn test_explode_10() {
     let snailfish = "[[[[0,7],4],[7,[[1,4],9]]],[1,1]]";
     let parsed = parse_snailfish(&snailfish);
-    let action = action(&parsed);
+    let action = action(&snailfish, &parsed, &Action::NonAction);
 
     assert_eq!(
         action,
         Action::Explode {
-            pair: &(17..18),
+            pair: &(17..20),
             left: Some(&(3, 13..14)),
             right: Some(&(4, 22..23))
         }
     );
 
-    let result = execute(&snailfish, action).unwrap();
+    let result = execute(&snailfish, &action).unwrap();
     assert_eq!(result, String::from("[[[[0,7],4],[8,[0,13]]],[1,1]]"));
+}
+
+#[test]
+fn test_explode_11() {
+    let snailfish =
+        "[[[[4,0],[5,4]],[[7,7],[6,0]]],[[8,[7,7]],[[7,0],[[9,10],0]]]]";
+    let parsed = parse_snailfish(&snailfish);
+    let action = action(&snailfish, &parsed, &Action::NonAction);
+    let result = execute(&snailfish, &action).unwrap();
+    assert_eq!(result, String::from("[[[[4,0],[5,4]],[[7,7],[6,0]]],[[8,[7,7]],[[7,9],10]]]]"));
 }
 
 
@@ -482,14 +559,14 @@ fn test_explode_10() {
 fn test_split_1() {
     let snailfish = "[[[[0,7],4],[15,[0,13]]],[1,1]]";
     let parsed = parse_snailfish(&snailfish);
-    let action = action(&parsed);
+    let action = action(&snailfish, &parsed, &Action::NonAction);
 
     assert_eq!(
         action,
         Action::Split { range: &(3, 13..15) }
     );
 
-    let result = execute(&snailfish, action).unwrap();
+    let result = execute(&snailfish, &action).unwrap();
     assert_eq!(result, String::from("[[[[0,7],4],[[7,8],[0,13]]],[1,1]]"));
 }
 
@@ -497,26 +574,26 @@ fn test_split_1() {
 fn test_split_2() {
     let snailfish = "[[[[0,7],4],[[7,8],[0,13]]],[1,1]]";
     let parsed = parse_snailfish(&snailfish);
-    let action = action(&parsed);
+    let action = action(&snailfish, &parsed, &Action::NonAction);
 
     assert_eq!(
         action,
         Action::Split { range: &(4, 22..24) }
     );
 
-    let result = execute(&snailfish, action).unwrap();
+    let result = execute(&snailfish, &action).unwrap();
     assert_eq!(result, String::from("[[[[0,7],4],[[7,8],[0,[6,7]]]],[1,1]]"));
 }
 
-fn reduce(snailfish: &str) -> String {
+fn reduce(snailfish: &str, prev_action: &Action) -> String {
     let parsed = parse_snailfish(snailfish);
-    let action = action(&parsed);
+    let exec_action = action(&snailfish, &parsed, prev_action);
 
-    println!("{:?}", action);
-    match execute(snailfish, action) {
+    println!("{:?}", exec_action);
+    match execute(snailfish, &exec_action) {
         Some(n) => {
             println!("{}", n);
-            reduce(&n)
+            reduce(&n, &exec_action)
         },
         None => snailfish.to_string()
     }
@@ -527,7 +604,7 @@ fn test_reduce() {
     let snailfish_1 = "[[[[4,3],4],4],[7,[[8,4],9]]]";
     let snailfish_2 = "[1,1]";
     let sum = add(snailfish_1, snailfish_2);
-    let result = reduce(&sum);
+    let result = reduce(&sum, &Action::NonAction);
     assert_eq!(result, "[[[[0,7],4],[[7,8],[6,0]]],[8,1]]");
 }
 
@@ -537,7 +614,7 @@ fn queue_sum(queue: &mut VecDeque<&str>) -> String {
     queue.iter().fold(String::from(start), |acc, next| {
         let sum = add(&acc, next);
         println!("{}", sum);
-        reduce(&sum)
+        reduce(&sum, &Action::NonAction)
     })
 }
 
