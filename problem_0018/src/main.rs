@@ -5,7 +5,7 @@ const PAIR_LENGTH: usize = 5;
 #[derive(Debug, Eq, PartialEq)]
 enum Action {
     Explode { pair: usize, left: Option<usize>, right: Option<usize> },
-    Split,
+    Split { start: usize, end: usize },
     NonAction
 }
 
@@ -32,6 +32,7 @@ fn add(snailfish: &str, other_snailfish: &str) -> String {
 fn test_sum_snailfish() {
     let snailfish_1 = "[1,2]";
     let snailfish_2 = "[[3,4],5]";
+
     assert_eq!(
         add(snailfish_1, snailfish_2),
         String::from("[[1,2],[[3,4],5]]")
@@ -39,9 +40,21 @@ fn test_sum_snailfish() {
 }
 
 fn action(input: &str) -> Action {
-    let mut action = Action::NonAction;
     let mut depth = 0;
     let mut left_index = None;
+    let mut counter = 0;
+
+    for p in input.split(&['[', ']', ','][..]) {
+        let q = if p.len() == 0 { 1 } else { p.len() };
+        counter += q;
+
+        if p.len() > 1 {
+            return Action::Split {
+                start: counter,
+                end: counter + (p.len() - 1)
+            }
+        }
+    }
 
     for (p, c) in input.chars().enumerate() {
         match c {
@@ -66,17 +79,39 @@ fn action(input: &str) -> Action {
                 }
             }
 
-            action = Action::Explode {
+            return Action::Explode {
                 pair: p,
                 left: left_index,
                 right: right_index
-            };
-
-            break;
+            }
         }
     }
 
-    action
+    Action::NonAction
+}
+
+#[test]
+fn test_action_explode() {
+    let snailfish = "[[[[[9,8],1],2],3],4]";
+    let action = action(&snailfish);
+
+    assert_eq!(action, Action::Explode { pair: 4, left: None, right: Some(10) });
+}
+
+#[test]
+fn test_action_no_action() {
+    let snailfish = "[2,4]";
+    let action = action(&snailfish);
+
+    assert_eq!(action, Action::NonAction);
+}
+
+#[test]
+fn test_action_split() {
+    let snailfish = "[[[[0,7],4],[15,[0,13]]],[1,1]]";
+    let action = action(&snailfish);
+
+    assert_eq!(action, Action::Split { start: 12, end: 13 });
 }
 
 fn execute(input: &str, action: Action) -> String {
