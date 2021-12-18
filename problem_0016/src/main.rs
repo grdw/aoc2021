@@ -67,7 +67,7 @@ fn read_literal_value(cursor: &mut Cursor<String>) -> u64 {
 
 mod p2 {
     use super::*;
-    use std::rc::{Rc, Weak};
+    use std::rc::Rc;
     use std::cell::RefCell;
 
     #[derive(Debug, Clone, Eq, PartialEq)]
@@ -79,7 +79,6 @@ mod p2 {
 
     #[derive(Debug)]
     pub struct Node {
-        parent: Option<Weak<RefCell<Node>>>,
         children: Vec<Rc<RefCell<Node>>>,
         instruction: Instruction
     }
@@ -88,22 +87,18 @@ mod p2 {
         pub fn rc_root() -> Rc<RefCell<Node>> {
             Rc::new(
                 RefCell::new(
-                    Node::node(Instruction::No, None)
+                    Node::node(Instruction::No)
                 )
             )
         }
 
         pub fn add_child(
             &mut self,
-            instruction: Instruction,
-            parent: &Rc<RefCell<Node>>) -> Rc<RefCell<Node>> {
+            instruction: Instruction) -> Rc<RefCell<Node>> {
 
             let rc = Rc::new(
                 RefCell::new(
-                    Node::node(
-                        instruction,
-                        Some(Rc::downgrade(parent))
-                    )
+                    Node::node(instruction)
                 )
             );
 
@@ -123,12 +118,10 @@ mod p2 {
         }
 
         fn node(
-            instruction: Instruction,
-            parent: Option<Weak<RefCell<Node>>>
+            instruction: Instruction
         ) -> Node {
             Node {
                 children: vec![],
-                parent: parent,
                 instruction: instruction
             }
         }
@@ -168,14 +161,12 @@ mod p2 {
                 _ => panic!("Invalid")
             };
 
-            result.borrow_mut().add_child(
-                Instruction::Number(val), &result
-            );
+            result.borrow_mut().add_child(Instruction::Number(val));
             result
         } else {
             let n = match node.instruction {
                 Instruction::Op(n) => {
-                    result.borrow_mut().add_child(Instruction::Op(n), &result)
+                    result.borrow_mut().add_child(Instruction::Op(n))
                 },
                 _ => result.clone()
             };
@@ -200,10 +191,10 @@ mod p2 {
     #[test]
     fn test_unwind_sum() {
         let root = Node::rc_root();
-        let add_root = root.borrow_mut().add_child(Instruction::Op(0), &root);
-        add_root.borrow_mut().add_child(Instruction::Number(25), &add_root);
-        add_root.borrow_mut().add_child(Instruction::Number(10), &add_root);
-        add_root.borrow_mut().add_child(Instruction::Number(1), &add_root);
+        let add_root = root.borrow_mut().add_child(Instruction::Op(0));
+        add_root.borrow_mut().add_child(Instruction::Number(25));
+        add_root.borrow_mut().add_child(Instruction::Number(10));
+        add_root.borrow_mut().add_child(Instruction::Number(1));
 
         let new_node = Node::rc_root();
         collapse(root, new_node.clone());
@@ -215,13 +206,13 @@ mod p2 {
     #[test]
     fn test_unwind_multiply() {
         let root = Node::rc_root();
-        let mul1 = root.borrow_mut().add_child(Instruction::Op(1), &root);
-        let add1 = mul1.borrow_mut().add_child(Instruction::Op(0), &mul1);
-        let add2 = mul1.borrow_mut().add_child(Instruction::Op(0), &mul1);
-        add1.borrow_mut().add_child(Instruction::Number(5), &add1);
-        add1.borrow_mut().add_child(Instruction::Number(2), &add1);
-        add2.borrow_mut().add_child(Instruction::Number(6), &add2);
-        add2.borrow_mut().add_child(Instruction::Number(4), &add2);
+        let mul1 = root.borrow_mut().add_child(Instruction::Op(1));
+        let add1 = mul1.borrow_mut().add_child(Instruction::Op(0));
+        let add2 = mul1.borrow_mut().add_child(Instruction::Op(0));
+        add1.borrow_mut().add_child(Instruction::Number(5));
+        add1.borrow_mut().add_child(Instruction::Number(2));
+        add2.borrow_mut().add_child(Instruction::Number(6));
+        add2.borrow_mut().add_child(Instruction::Number(4));
 
         assert_eq!(recurse_collapse(root), 70);
     }
@@ -229,10 +220,10 @@ mod p2 {
     #[test]
     fn test_unwind_max() {
         let root = Node::rc_root();
-        let max = root.borrow_mut().add_child(Instruction::Op(3), &root);
-        max.borrow_mut().add_child(Instruction::Number(25), &max);
-        max.borrow_mut().add_child(Instruction::Number(10), &max);
-        max.borrow_mut().add_child(Instruction::Number(1), &max);
+        let max = root.borrow_mut().add_child(Instruction::Op(3));
+        max.borrow_mut().add_child(Instruction::Number(25));
+        max.borrow_mut().add_child(Instruction::Number(10));
+        max.borrow_mut().add_child(Instruction::Number(1));
 
         assert_eq!(recurse_collapse(root), 25);
     }
@@ -240,10 +231,10 @@ mod p2 {
     #[test]
     fn test_unwind_min() {
         let root = Node::rc_root();
-        let max = root.borrow_mut().add_child(Instruction::Op(2), &root);
-        max.borrow_mut().add_child(Instruction::Number(25), &max);
-        max.borrow_mut().add_child(Instruction::Number(10), &max);
-        max.borrow_mut().add_child(Instruction::Number(1), &max);
+        let max = root.borrow_mut().add_child(Instruction::Op(2));
+        max.borrow_mut().add_child(Instruction::Number(25));
+        max.borrow_mut().add_child(Instruction::Number(10));
+        max.borrow_mut().add_child(Instruction::Number(1));
 
         assert_eq!(recurse_collapse(root), 1);
     }
@@ -251,9 +242,9 @@ mod p2 {
     #[test]
     fn test_unwind_gt() {
         let root = Node::rc_root();
-        let max = root.borrow_mut().add_child(Instruction::Op(5), &root);
-        max.borrow_mut().add_child(Instruction::Number(25), &max);
-        max.borrow_mut().add_child(Instruction::Number(10), &max);
+        let max = root.borrow_mut().add_child(Instruction::Op(5));
+        max.borrow_mut().add_child(Instruction::Number(25));
+        max.borrow_mut().add_child(Instruction::Number(10));
 
         assert_eq!(recurse_collapse(root), 1);
     }
@@ -261,9 +252,9 @@ mod p2 {
     #[test]
     fn test_unwind_lt() {
         let root = Node::rc_root();
-        let max = root.borrow_mut().add_child(Instruction::Op(6), &root);
-        max.borrow_mut().add_child(Instruction::Number(25), &max);
-        max.borrow_mut().add_child(Instruction::Number(10), &max);
+        let max = root.borrow_mut().add_child(Instruction::Op(6));
+        max.borrow_mut().add_child(Instruction::Number(25));
+        max.borrow_mut().add_child(Instruction::Number(10));
 
         assert_eq!(recurse_collapse(root), 0);
     }
@@ -271,9 +262,9 @@ mod p2 {
     #[test]
     fn test_unwind_eq() {
         let root = Node::rc_root();
-        let max = root.borrow_mut().add_child(Instruction::Op(7), &root);
-        max.borrow_mut().add_child(Instruction::Number(25), &max);
-        max.borrow_mut().add_child(Instruction::Number(10), &max);
+        let max = root.borrow_mut().add_child(Instruction::Op(7));
+        max.borrow_mut().add_child(Instruction::Number(25));
+        max.borrow_mut().add_child(Instruction::Number(10));
 
         assert_eq!(recurse_collapse(root), 0);
     }
@@ -285,12 +276,12 @@ mod p2 {
         if type_id == 4 {
             let value = read_literal_value(cursor);
             let number = Instruction::Number(value);
-            node.borrow_mut().add_child(number, &node);
+            node.borrow_mut().add_child(number);
         } else {
             let type_length_id = read_ahead(cursor, 1);
 
             let operation = Instruction::Op(type_id);
-            let child = node.borrow_mut().add_child(operation, &node);
+            let child = node.borrow_mut().add_child(operation);
 
             if type_length_id == 0 {
                 let total_length = read_ahead(cursor, 15);
