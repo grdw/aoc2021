@@ -70,6 +70,8 @@ mod p2 {
     use std::rc::Rc;
     use std::cell::RefCell;
 
+    type RNode = Rc<RefCell<Node>>;
+
     #[derive(Debug, Clone, Eq, PartialEq)]
     pub enum Instruction {
         No,
@@ -79,12 +81,12 @@ mod p2 {
 
     #[derive(Debug)]
     pub struct Node {
-        children: Vec<Rc<RefCell<Node>>>,
+        children: Vec<RNode>,
         instruction: Instruction
     }
 
     impl Node {
-        pub fn rc_root() -> Rc<RefCell<Node>> {
+        pub fn rc_root() -> RNode {
             Rc::new(
                 RefCell::new(
                     Node::node(Instruction::No)
@@ -92,10 +94,7 @@ mod p2 {
             )
         }
 
-        pub fn add_child(
-            &mut self,
-            instruction: Instruction) -> Rc<RefCell<Node>> {
-
+        pub fn add_child(&mut self, instruction: Instruction) -> RNode {
             let rc = Rc::new(
                 RefCell::new(
                     Node::node(instruction)
@@ -106,20 +105,29 @@ mod p2 {
             rc
         }
 
-        fn to_vec(&self) -> Vec<u64> {
-            let mut result = vec![];
+        fn operate(&self) -> u64 {
+            let mut nums = vec![];
             for child in &self.children {
                 match child.borrow().instruction {
-                    Instruction::Number(n) => result.push(n),
+                    Instruction::Number(n) => nums.push(n),
                     _ => ()
                 }
             }
-            result
+
+            match self.instruction {
+                Instruction::Op(0) => nums.iter().fold(0, |a, n| a + n),
+                Instruction::Op(1) => nums.iter().fold(1, |a, n| a * n),
+                Instruction::Op(2) => *nums.iter().min().unwrap(),
+                Instruction::Op(3) => *nums.iter().max().unwrap(),
+                Instruction::Op(5) => if nums[0] > nums[1] { 1 } else { 0 },
+                Instruction::Op(6) => if nums[0] < nums[1] { 1 } else { 0 },
+                Instruction::Op(7) => if nums[0] == nums[1] { 1 } else { 0 },
+                Instruction::Number(val) => val,
+                _ => panic!("Invalid")
+            }
         }
 
-        fn node(
-            instruction: Instruction
-        ) -> Node {
+        fn node(instruction: Instruction) -> Node {
             Node {
                 children: vec![],
                 instruction: instruction
@@ -142,25 +150,11 @@ mod p2 {
         }
     }
 
-    pub fn collapse(
-        rc_node: Rc<RefCell<Node>>,
-        result: Rc<RefCell<Node>>) -> Rc<RefCell<Node>> {
+    pub fn collapse(rc_node: RNode, result: RNode) -> RNode {
         let node = rc_node.borrow();
 
         if node.all_leafs() {
-            let nums = node.to_vec();
-            let val = match node.instruction {
-                Instruction::Op(0) => nums.iter().fold(0, |a, n| a + n),
-                Instruction::Op(1) => nums.iter().fold(1, |a, n| a * n),
-                Instruction::Op(2) => *nums.iter().min().unwrap(),
-                Instruction::Op(3) => *nums.iter().max().unwrap(),
-                Instruction::Op(5) => if nums[0] > nums[1] { 1 } else { 0 },
-                Instruction::Op(6) => if nums[0] < nums[1] { 1 } else { 0 },
-                Instruction::Op(7) => if nums[0] == nums[1] { 1 } else { 0 },
-                Instruction::Number(val) => val,
-                _ => panic!("Invalid")
-            };
-
+            let val = node.operate();
             result.borrow_mut().add_child(Instruction::Number(val));
             result
         } else {
@@ -178,7 +172,7 @@ mod p2 {
         }
     }
 
-    pub fn recurse_collapse(rc_node: Rc<RefCell<Node>>) -> u64 {
+    pub fn recurse_collapse(rc_node: RNode) -> u64 {
         if let Some(n) = rc_node.borrow().read_value() {
             n
         } else {
