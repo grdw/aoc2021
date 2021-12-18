@@ -124,13 +124,17 @@ fn test_parse_snailfish_3() {
 
 fn action(input: &Snailfish) -> Action {
     for i in 0..input.len() {
-        let (depth, range) = &input[i];
+        let (_, range) = &input[i];
 
         if range.len() > 1 {
             return Action::Split {
                 range: &input[i]
             }
         }
+    }
+
+    for i in 0..input.len() {
+        let (depth, range) = &input[i];
 
         if *depth > 4 {
             let left = if i > 0 {
@@ -178,6 +182,16 @@ fn test_action_split() {
     assert_eq!(action, Action::Split { range: &(3, 13..15) });
 }
 
+#[test]
+fn test_action_split_2() {
+    let snailfish = parse_snailfish(
+        "[[[[4,0],[5,4]],[[7,7],[6,0]]],[[7,[5,5]],[[5,7],[[0,11],[8,8]]]]]"
+    );
+    let action = action(&snailfish);
+
+    assert_eq!(action, Action::Split { range: &(5, 53..55) });
+}
+
 fn explode(
     input: &str,
     pair: &Range<usize>,
@@ -192,50 +206,39 @@ fn explode(
         .collect();
 
     match (left, right) {
-        (Some((_, l_range)), Some((_, r_range))) => {
-            let right_t = input[r_range.start..r_range.end]
-                .parse::<u8>()
-                .unwrap();
-
-            let left_t = input[l_range.start..l_range.end]
-                .parse::<u8>()
-                .unwrap();
+        (Some((_, lran)), Some((_, rran))) => {
+            let right_t = input[rran.start..rran.end].parse::<u8>().unwrap();
+            let left_t = input[lran.start..lran.end].parse::<u8>().unwrap();
 
             let l_sum = format!("{}", to_explode[0] + left_t);
             let r_sum = format!("{}", to_explode[1] + right_t);
 
-            result.replace_range(r_range.start..r_range.end, &r_sum);
-            result.replace_range(l_range.start..l_range.end, &l_sum);
+            result.replace_range(rran.start..rran.end, &r_sum);
+            result.replace_range(lran.start..lran.end, &l_sum);
 
-            let s = pair.start - (2 - l_sum.len());
-            let e = pair.end + (2 + l_sum.len());
-            result.replace_range(s..e, "0");
+            let start = pair.start - (2 - l_sum.len());
+            let end = pair.end + (2 + l_sum.len());
+            result.replace_range(start..end, "0");
         },
-        (None, Some((_, range))) => {
-            let right_t = input[range.start..range.end]
-                .parse::<u8>()
-                .unwrap();
-
+        (None, Some((_, ran))) => {
+            let right_t = input[ran.start..ran.end].parse::<u8>().unwrap();
             let sum = format!("{}", to_explode[1] + right_t);
 
-            result.replace_range(range.start..range.end, &sum);
+            result.replace_range(ran.start..ran.end, &sum);
 
-            let s = pair.start - (2 - sum.len());
-            let e = pair.end + (2 + sum.len());
-            result.replace_range(s..e, "0");
+            let start = pair.start - (2 - sum.len());
+            let end = pair.end + (2 + sum.len());
+            result.replace_range(start..end, "0");
         },
-        (Some((_, range)), None) => {
-            let left_t = input[range.start..range.end]
-                .parse::<u8>()
-                .unwrap();
-
+        (Some((_, ran)), None) => {
+            let left_t = input[ran.start..ran.end].parse::<u8>().unwrap();
             let sum = format!("{}", to_explode[0] + left_t);
 
-            result.replace_range(range.start..range.end, &sum);
+            result.replace_range(ran.start..ran.end, &sum);
 
-            let s = pair.start - (2 - sum.len());
-            let e = pair.end + (2 + sum.len());
-            result.replace_range(s..e, "0");
+            let start = pair.start - (2 - sum.len());
+            let end = pair.end + (2 + sum.len());
+            result.replace_range(start..end, "0");
         },
         _ => panic!("Invalid action"),
     }
