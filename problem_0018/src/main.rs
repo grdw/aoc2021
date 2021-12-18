@@ -1,5 +1,14 @@
 use std::fs;
 
+const PAIR_LENGTH: usize = 5;
+
+#[derive(Debug, Eq, PartialEq)]
+enum Action {
+    Explode { pair: usize, left: Option<usize>, right: Option<usize> },
+    Split,
+    NonAction
+}
+
 fn main() {
     let contents = fs::read_to_string("input")
                       .unwrap_or("".to_string());
@@ -29,49 +38,79 @@ fn test_sum_snailfish() {
     )
 }
 
-fn explode(input: &str) -> String {
-    let mut s = String::new();
+fn action(input: &str) -> Action {
+    let mut action = Action::NonAction;
     let mut depth = 0;
-    let mut p = 0;
+    let mut left_index = None;
 
-    for c in input.chars() {
-        if c == '[' {
-            depth += 1;
-        } else if c == ']' {
-            depth -= 1;
+    for (p, c) in input.chars().enumerate() {
+        match c {
+            '[' => depth += 1,
+            ']' => depth -= 1,
+            '0'..='9' => left_index = Some(p),
+            _ => ()
         }
 
         if depth == 5 {
-            let exploded_pair = &input[p..p + 5];
-            println!("{}", exploded_pair);
+            let mut right_index = None;
+
+            for i in (p + PAIR_LENGTH)..input.len() {
+                let cha = input.chars().nth(i).unwrap();
+
+                match cha {
+                    '0'..='9' => {
+                        right_index = Some(i);
+                        break;
+                    },
+                    _ => ()
+                }
+            }
+
+            action = Action::Explode {
+                pair: p,
+                left: left_index,
+                right: right_index
+            };
+
             break;
         }
-
-        p += 1;
     }
 
-    s
+    action
 }
 
 #[test]
 fn test_parse_snailfish_explode_1() {
     let snailfish = "[[[[[9,8],1],2],3],4]";
 
-    assert_eq!(explode(&snailfish), String::from("[[[[0,9],2],3],4]"));
+    assert_eq!(
+        action(&snailfish),
+        Action::Explode { pair: 4, left: None, right: Some(10) }
+    );
+    //String::from("[[[[0,9],2],3],4]")
 }
 
 #[test]
 fn test_parse_snailfish_explode_2() {
     let snailfish = "[7,[6,[5,[4,[3,2]]]]]";
 
-    assert_eq!(explode(&snailfish), String::from("[7,[6,[5,[7,0]]]]"));
+    assert_eq!(
+        action(&snailfish),
+        Action::Explode { pair: 12, left: Some(10), right: None }
+    );
+    //String::from("[7,[6,[5,[7,0]]]]")
 }
 
 #[test]
 fn test_parse_snailfish_explode_3() {
     let snailfish = "[[6,[5,[4,[3,2]]]],1]";
 
-    assert_eq!(explode(&snailfish), String::from("[[6,[5,[7,0]]],3]"));
+    assert_eq!(
+        action(&snailfish),
+        Action::Explode { pair: 10, left: Some(8), right: Some(19) }
+    );
+
+    //String::from("[[6,[5,[7,0]]],3]")
 }
 
 #[test]
@@ -79,9 +118,10 @@ fn test_parse_snailfish_explode_4() {
     let snailfish = "[[3,[2,[1,[7,3]]]],[6,[5,[4,[3,2]]]]]";
 
     assert_eq!(
-        explode(&snailfish),
-        String::from("[[3,[2,[8,0]]],[9,[5,[4,[3,2]]]]]")
+        action(&snailfish),
+        Action::Explode { pair: 10, left: Some(8), right: Some(20) }
     );
+    //String::from("[[3,[2,[8,0]]],[9,[5,[4,[3,2]]]]]")
 }
 
 #[test]
@@ -89,7 +129,8 @@ fn test_parse_snailfish_explode_5() {
     let snailfish = "[[3,[2,[8,0]]],[9,[5,[4,[3,2]]]]]";
 
     assert_eq!(
-        explode(&snailfish),
-        String::from("[[3,[2,[8,0]]],[9,[5,[7,0]]]]")
+        action(&snailfish),
+        Action::Explode { pair: 24, left: Some(22), right: None }
     )
+    //String::from("[[3,[2,[8,0]]],[9,[5,[7,0]]]]")
 }
