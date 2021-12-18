@@ -48,30 +48,12 @@ fn test_sum_snailfish() {
     )
 }
 
-fn parse_layer(
-    input: &str,
-    depth: isize,
-    start: usize,
-    end: usize) -> SnailfishPart {
-
-    let n = &input[start..end];
-    let m = n.split(",").collect::<Vec<&str>>();
-
-    if m[0] == "" {
-        (depth, start+1..end)
-    } else if m[1] == "" {
-        (depth, start..end-1)
-    } else {
-        (depth, start..end)
-    }
-}
-
 fn parse_snailfish(input: &str) -> Snailfish {
     let mut result = vec![];
     let mut last = 0;
     let mut depth = 0;
 
-    for (i, matched) in input.match_indices(|c: char| c == '[' || c == ']') {
+    for (i, matched) in input.match_indices(|c: char| !c.is_numeric() ) {
         let depth_incr = match matched {
             "[" => 1,
             "]" => -1,
@@ -79,10 +61,7 @@ fn parse_snailfish(input: &str) -> Snailfish {
         };
 
         if last != i {
-            if &input[last..i] != "," {
-                let t = parse_layer(input, depth, last, i);
-                result.push(t)
-            }
+            result.push((depth, last..i));
         }
 
         depth += depth_incr;
@@ -90,8 +69,7 @@ fn parse_snailfish(input: &str) -> Snailfish {
     }
 
     if last < input.len() {
-        let t = parse_layer(input, depth, last, input.len());
-        result.push(t)
+        result.push((depth, last..input.len()));
     }
 
     result
@@ -102,12 +80,15 @@ fn test_parse_snailfish_1() {
     let snailfish = "[[[[0,7],4],[7,[[8,4],9]]],[1,1]]";
 
     assert_eq!(parse_snailfish(&snailfish), vec![
-        (4, 4..7),
+        (4, 4..5),
+        (4, 6..7),
         (3, 9..10),
         (3, 13..14),
-        (5, 17..20),
+        (5, 17..18),
+        (5, 19..20),
         (4, 22..23),
-        (2, 28..31)
+        (2, 28..29),
+        (2, 30..31)
     ]);
 }
 
@@ -116,7 +97,8 @@ fn test_parse_snailfish_2() {
     let snailfish = "[1,200]";
 
     assert_eq!(parse_snailfish(&snailfish), vec![
-        (1, 1..6),
+        (1, 1..2),
+        (1, 3..6),
     ]);
 }
 
@@ -127,11 +109,16 @@ fn test_parse_snailfish_3() {
     let snailfish = add(part, final_part);
 
     assert_eq!(parse_snailfish(&snailfish), vec![
-        (5, 5..8),
-        (5, 11..14),
-        (4, 18..21),
-        (3, 25..28),
-        (2, 32..35),
+        (5, 5..6),
+        (5, 7..8),
+        (5, 11..12),
+        (5, 13..14),
+        (4, 18..19),
+        (4, 20..21),
+        (3, 25..26),
+        (3, 27..28),
+        (2, 32..33),
+        (2, 34..35)
     ]);
 }
 
@@ -150,7 +137,8 @@ fn action<'a>(
 
         if *depth > 4 {
             let left = if i > 0 {
-                parts.get(i - 1)
+                None
+                //to_singular_range(input, parts, i - 1)
             } else {
                 None
             };
@@ -158,7 +146,7 @@ fn action<'a>(
             return Action::Explode {
                 pair: range,
                 left: left,
-                right: parts.get(i + 1)
+                right: None //to_singular_range(input, parts, i + 1)
             }
         }
     }
@@ -220,8 +208,8 @@ fn test_action_split_2() {
 
     assert_eq!(action, Action::Explode {
         pair: &(51..55),
-        left: Some(&(4, 44..47)),
-        right: Some(&(5, 58..61))
+        left: Some(&(4, 44..45)),
+        right: Some(&(5, 58..59))
     });
 }
 
@@ -241,20 +229,6 @@ fn test_action_split_3() {
             );
 }
 
-fn directed_digit(input: &str, range: &Range<usize>, left: bool) -> u8 {
-    let d = &input[range.start..range.end];
-    let digits: Vec<u8> = digit_split(d);
-
-    if left {
-        digits[0]
-    } else {
-        match digits.get(1) {
-            Some(d) => *d,
-            None => digits[0]
-        }
-    }
-}
-
 fn digit_split(input: &str) -> Vec<u8> {
     input.split(",").map(|n| n.parse::<u8>().unwrap()).collect()
 }
@@ -262,8 +236,6 @@ fn digit_split(input: &str) -> Vec<u8> {
 #[test]
 fn test_digit_split() {
     assert_eq!(digit_split("5"), vec![5]);
-    assert_eq!(directed_digit("5", &(0..1), true), 5);
-    assert_eq!(directed_digit("5", &(0..1), false), 5);
 }
 
 fn explode(
@@ -278,8 +250,8 @@ fn explode(
 
     match (left, right) {
         (Some((_, lran)), Some((_, rran))) => {
-            let right_t = directed_digit(input, rran, false);
-            let left_t = directed_digit(input, lran, true);
+            let right_t = input[rran.start..rran.end].parse::<u8>().unwrap();
+            let left_t = input[lran.start..lran.end].parse::<u8>().unwrap();
 
             let l_sum = format!("{}", to_explode[0] + left_t);
             let r_sum = format!("{}", to_explode[1] + right_t);
@@ -294,14 +266,14 @@ fn explode(
             }
         },
         (None, Some((_, ran))) => {
-            let right_t = directed_digit(input, ran, false);
+            let right_t = input[ran.start..ran.end].parse::<u8>().unwrap();
             let sum = format!("{}", to_explode[1] + right_t);
 
             result.replace_range(ran.start..ran.end, &sum);
             result.replace_range(pair.start-1..pair.end+1, "0");
         },
         (Some((_, ran)), None) => {
-            let left_t = directed_digit(input, ran, true);
+            let left_t = input[ran.start..ran.end].parse::<u8>().unwrap();
             let sum = format!("{}", to_explode[0] + left_t);
 
             result.replace_range(ran.start..ran.end, &sum);
@@ -458,7 +430,7 @@ fn test_explode_7() {
         Action::Explode {
             pair: &(5..8),
             left: None,
-            right: Some(&(5, 11..14))
+            right: Some(&(5, 11..12))
         }
     );
 
