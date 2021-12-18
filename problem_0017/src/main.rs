@@ -1,5 +1,7 @@
 use std::ops::RangeInclusive;
 
+type Target = RangeInclusive<i16>;
+
 fn main() {
     let x_range = 143..=177;
     let y_range = -106..=-71;
@@ -8,10 +10,7 @@ fn main() {
     println!("The amount of probes are: {}", num_probes(&x_range, &y_range));
 }
 
-fn num_probes(
-    target_x: &RangeInclusive<i16>,
-    target_y: &RangeInclusive<i16>
-) -> i16 {
+fn num_probes(target_x: &Target, target_y: &Target) -> i16 {
     let max = *target_x.end();
     let mut count = 0;
 
@@ -34,10 +33,7 @@ fn test_num_probes() {
     assert_eq!(num_probes(&range_x, &range_y), 112);
 }
 
-fn max_probe(
-    target_x: &RangeInclusive<i16>,
-    target_y: &RangeInclusive<i16>
-) -> i16 {
+fn max_probe(target_x: &Target, target_y: &Target) -> i16 {
     let max = *target_x.end();
     let mut m = 0;
     for x in 1..max {
@@ -63,9 +59,9 @@ fn test_max_probe() {
 fn probe(
     mut x_vel: i16,
     mut y_vel: i16,
-    target_x: &RangeInclusive<i16>,
-    target_y: &RangeInclusive<i16>,
-) -> Option<i16> {
+    target_x: &Target,
+    target_y: &Target) -> Option<i16> {
+
     let (mut x, mut y) = (0, 0);
     let mut max_y = 0;
 
