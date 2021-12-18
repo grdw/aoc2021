@@ -1,5 +1,6 @@
 use std::fs;
 use std::ops::Range;
+use std::collections::VecDeque;
 
 type SnailfishPart = (isize, Range<usize>);
 type Snailfish = Vec<SnailfishPart>;
@@ -7,7 +8,7 @@ type Snailfish = Vec<SnailfishPart>;
 #[derive(Debug, Eq, PartialEq)]
 enum Action<'a> {
     Explode {
-        pair: usize,
+        pair: &'a Range<usize>,
         left: Option<&'a SnailfishPart>,
         right: Option<&'a SnailfishPart>
     },
@@ -101,6 +102,26 @@ fn test_parse_snailfish_2() {
     ]);
 }
 
+#[test]
+fn test_parse_snailfish_3() {
+    let part = "[[[[1,1],[2,2]],[3,3]],[4,4]]";
+    let final_part = "[5,5]";
+    let snailfish = add(part, final_part);
+
+    assert_eq!(parse_snailfish(&snailfish), vec![
+        (5, 5..6),
+        (5, 7..8),
+        (5, 11..12),
+        (5, 13..14),
+        (4, 18..19),
+        (4, 20..21),
+        (3, 25..26),
+        (3, 27..28),
+        (2, 32..33),
+        (2, 34..35)
+    ]);
+}
+
 fn action(input: &Snailfish) -> Action {
     for i in 0..input.len() {
         let (depth, range) = &input[i];
@@ -119,7 +140,7 @@ fn action(input: &Snailfish) -> Action {
             };
 
             return Action::Explode {
-                pair: range.start,
+                pair: range,
                 left: left,
                 right: input.get(i + 2)
             }
@@ -135,7 +156,7 @@ fn test_action_explode() {
     let action = action(&snailfish);
 
     assert_eq!(action, Action::Explode {
-        pair: 5,
+        pair: &(5..6),
         left: None,
         right: Some(&(4, 10..11))
     });
@@ -159,50 +180,64 @@ fn test_action_split() {
 
 fn explode(
     input: &str,
-    pair: usize,
+    pair: &Range<usize>,
     left: Option<&SnailfishPart>,
     right: Option<&SnailfishPart>) -> String {
 
-    let mut result = String::new();
+    let mut result = String::from(input);
 
-    result.push_str(&input[0..pair-1]);
-
-    let to_explode: Vec<u8> = input[pair..pair + 3]
+    let to_explode: Vec<u8> = input[pair.start..pair.end + 2]
         .split(",")
         .map(|n| n.parse::<u8>().unwrap())
         .collect();
 
-    let mut left_sum_len = 0;
+    match (left, right) {
+        (Some((_, l_range)), Some((_, r_range))) => {
+            let right_t = input[r_range.start..r_range.end]
+                .parse::<u8>()
+                .unwrap();
 
-    if let Some((_, range)) = left {
-        let left_t = input[range.start..range.end].parse::<u8>().unwrap();
-        let sum = format!("{}", to_explode[0] + left_t);
-        left_sum_len = sum.len();
+            let left_t = input[l_range.start..l_range.end]
+                .parse::<u8>()
+                .unwrap();
 
-        let mut start = 2;
-        start += left_sum_len;
-        result.replace_range(pair - start..pair - start + 1, &sum);
-    } else {
-        result.push_str("0,");
-    };
+            let l_sum = format!("{}", to_explode[0] + left_t);
+            let r_sum = format!("{}", to_explode[1] + right_t);
 
-    if let Some((_, range)) = right {
-        let right_t = input[range.start..range.end].parse::<u8>().unwrap();
-        let sum = format!("{}", to_explode[1] + right_t);
+            result.replace_range(r_range.start..r_range.end, &r_sum);
+            result.replace_range(l_range.start..l_range.end, &l_sum);
 
-        if left_sum_len > 0 {
-            result.push('0');
-            result.push_str(&input[pair + 4..range.start])
-        }
+            let s = pair.start - (2 - l_sum.len());
+            let e = pair.end + (2 + l_sum.len());
+            result.replace_range(s..e, "0");
+        },
+        (None, Some((_, range))) => {
+            let right_t = input[range.start..range.end]
+                .parse::<u8>()
+                .unwrap();
 
-        result.push_str(&sum);
-        result.push_str(&input[range.end..]);
-    } else {
-        result.push('0');
-    };
+            let sum = format!("{}", to_explode[1] + right_t);
 
-    if right.is_none() {
-        result.push_str(&input[pair + 4..]);
+            result.replace_range(range.start..range.end, &sum);
+
+            let s = pair.start - (2 - sum.len());
+            let e = pair.end + (2 + sum.len());
+            result.replace_range(s..e, "0");
+        },
+        (Some((_, range)), None) => {
+            let left_t = input[range.start..range.end]
+                .parse::<u8>()
+                .unwrap();
+
+            let sum = format!("{}", to_explode[0] + left_t);
+
+            result.replace_range(range.start..range.end, &sum);
+
+            let s = pair.start - (2 - sum.len());
+            let e = pair.end + (2 + sum.len());
+            result.replace_range(s..e, "0");
+        },
+        _ => panic!("Invalid action"),
     }
 
     result
@@ -237,7 +272,7 @@ fn test_explode_1() {
     assert_eq!(
         action,
         Action::Explode {
-            pair: 5,
+            pair: &(5..6),
             left: None,
             right: Some(&(4, 10..11))
         }
@@ -256,7 +291,7 @@ fn test_explode_2() {
     assert_eq!(
         action,
         Action::Explode {
-            pair: 13,
+            pair: &(13..14),
             left: Some(&(4, 10..11)),
             right: None
         }
@@ -275,7 +310,7 @@ fn test_explode_3() {
     assert_eq!(
         action,
         Action::Explode {
-            pair: 11,
+            pair: &(11..12),
             left: Some(&(4, 8..9)),
             right: Some(&(1, 19..20))
         }
@@ -294,7 +329,7 @@ fn test_explode_4() {
     assert_eq!(
         action,
         Action::Explode {
-            pair: 11,
+            pair: &(11..12),
             left: Some(&(4, 8..9)),
             right: Some(&(2, 20..21))
         }
@@ -313,7 +348,7 @@ fn test_explode_5() {
     assert_eq!(
         action,
         Action::Explode {
-            pair: 25,
+            pair: &(25..26),
             left: Some(&(4, 22..23)),
             right: None
         }
@@ -332,7 +367,7 @@ fn test_explode_6() {
     assert_eq!(
         action,
         Action::Explode {
-            pair: 17,
+            pair: &(17..18),
             left: Some(&(3, 13..14)),
             right: Some(&(4, 22..23))
         }
@@ -341,6 +376,104 @@ fn test_explode_6() {
     let result = execute(&snailfish, action).unwrap();
     assert_eq!(result, String::from("[[[[0,7],4],[15,[0,13]]],[1,1]]"));
 }
+
+#[test]
+fn test_explode_7() {
+    let snailfish = "[[[[[1,1],[2,2]],[3,3]],[4,4]],[5,5]]";
+    let parsed = parse_snailfish(&snailfish);
+    let first_action = action(&parsed);
+
+    assert_eq!(
+        first_action,
+        Action::Explode {
+            pair: &(5..6),
+            left: None,
+            right: Some(&(5, 11..12))
+        }
+    );
+
+    let result = execute(&snailfish, first_action).unwrap();
+    assert_eq!(result, String::from("[[[[0,[3,2]],[3,3]],[4,4]],[5,5]]"));
+
+    let snailfish = "[[[[0,[3,2]],[3,3]],[4,4]],[5,5]]";
+    let parsed = parse_snailfish(&snailfish);
+    let second_action = action(&parsed);
+
+    assert_eq!(
+        second_action,
+        Action::Explode {
+            pair: &(7..8),
+            left: Some(&(4, 4..5)),
+            right: Some(&(4, 14..15))
+        }
+    );
+
+    let result = execute(&snailfish, second_action).unwrap();
+    assert_eq!(result, String::from("[[[[3,0],[5,3]],[4,4]],[5,5]]"));
+}
+
+#[test]
+fn test_explode_8() {
+    let snailfish_1 = "[[[0,[4,5]],[0,0]],[[[4,5],[2,6]],[9,5]]]";
+    let snailfish_2 = "[7,[[[3,7],[4,3]],[[6,3],[8,8]]]]";
+    let sum = add(snailfish_1, snailfish_2);
+    let parsed = parse_snailfish(&sum);
+    let action = action(&parsed);
+
+    assert_eq!(
+        action,
+        Action::Explode {
+            pair: &(7..8),
+            left: Some(&(4, 4..5)),
+            right: Some(&(4, 14..15))
+        }
+    );
+
+    let result = execute(&sum, action).unwrap();
+    assert_eq!(
+        result,
+        String::from("[[[[4,0],[5,0]],[[[4,5],[2,6]],[9,5]]],[7,[[[3,7],[4,3]],[[6,3],[8,8]]]]]")
+    );
+}
+
+#[test]
+fn test_explode_9() {
+    let snailfish = "[[[[0,7],4],[7,[[8,4],4]]],[1,1]]";
+    let parsed = parse_snailfish(&snailfish);
+    let action = action(&parsed);
+
+    assert_eq!(
+        action,
+        Action::Explode {
+            pair: &(17..18),
+            left: Some(&(3, 13..14)),
+            right: Some(&(4, 22..23))
+        }
+    );
+
+    let result = execute(&snailfish, action).unwrap();
+    assert_eq!(result, String::from("[[[[0,7],4],[15,[0,8]]],[1,1]]"));
+}
+
+#[test]
+fn test_explode_10() {
+    let snailfish = "[[[[0,7],4],[7,[[1,4],9]]],[1,1]]";
+    let parsed = parse_snailfish(&snailfish);
+    let action = action(&parsed);
+
+    assert_eq!(
+        action,
+        Action::Explode {
+            pair: &(17..18),
+            left: Some(&(3, 13..14)),
+            right: Some(&(4, 22..23))
+        }
+    );
+
+    let result = execute(&snailfish, action).unwrap();
+    assert_eq!(result, String::from("[[[[0,7],4],[8,[0,13]]],[1,1]]"));
+}
+
 
 #[test]
 fn test_split_1() {
@@ -372,21 +505,76 @@ fn test_split_2() {
     assert_eq!(result, String::from("[[[[0,7],4],[[7,8],[0,[6,7]]]],[1,1]]"));
 }
 
-fn recurse_execute(snailfish: &str) -> String {
+fn reduce(snailfish: &str) -> String {
     let parsed = parse_snailfish(snailfish);
     let action = action(&parsed);
 
+    println!("{:?}", action);
     match execute(snailfish, action) {
-        Some(n) => recurse_execute(&n),
+        Some(n) => {
+            println!("{}", n);
+            reduce(&n)
+        },
         None => snailfish.to_string()
     }
 }
 
 #[test]
-fn test_recurse_execute() {
+fn test_reduce() {
     let snailfish_1 = "[[[[4,3],4],4],[7,[[8,4],9]]]";
     let snailfish_2 = "[1,1]";
     let sum = add(snailfish_1, snailfish_2);
-    let result = recurse_execute(&sum);
+    let result = reduce(&sum);
     assert_eq!(result, "[[[[0,7],4],[[7,8],[6,0]]],[8,1]]");
+}
+
+fn queue_sum(queue: &mut VecDeque<&str>) -> String {
+    let start = queue.pop_front().unwrap();
+
+    queue.iter().fold(String::from(start), |acc, next| {
+        let sum = add(&acc, next);
+        println!("{}", sum);
+        reduce(&sum)
+    })
+}
+
+#[test]
+fn test_reduce_2() {
+    let mut snailfish_numbers = VecDeque::from([
+        "[1,1]",
+        "[2,2]",
+        "[3,3]",
+        "[4,4]"
+    ]);
+
+    let result = queue_sum(&mut snailfish_numbers);
+    assert_eq!(result, "[[[[1,1],[2,2]],[3,3]],[4,4]]");
+}
+
+#[test]
+fn test_reduce_3() {
+    let mut snailfish_numbers = VecDeque::from([
+        "[1,1]",
+        "[2,2]",
+        "[3,3]",
+        "[4,4]",
+        "[5,5]"
+    ]);
+
+    let result = queue_sum(&mut snailfish_numbers);
+    assert_eq!(result, "[[[[3,0],[5,3]],[4,4]],[5,5]]");
+}
+
+#[test]
+fn test_reduce_4() {
+    let mut snailfish_numbers = VecDeque::from([
+        "[[[0,[4,5]],[0,0]],[[[4,5],[2,6]],[9,5]]]",
+        "[7,[[[3,7],[4,3]],[[6,3],[8,8]]]]"
+    ]);
+
+    let result = queue_sum(&mut snailfish_numbers);
+    assert_eq!(
+        result,
+        "[[[[4,0],[5,4]],[[7,7],[6,0]]],[[8,[7,7]],[[7,9],[5,0]]]]"
+    );
 }
