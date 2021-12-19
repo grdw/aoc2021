@@ -26,19 +26,53 @@ fn main() {
 
     let mut queue = VecDeque::from(readings);
     let result = queue_sum(&mut queue);
-    println!("{:?}", result);
+    let mut parsed = parse_snailfish(&result);
+    println!("{}", magnitude(&result, &parsed, &mut 0));
 }
 
-fn magnitude(input: &str) -> u64 {
-    let parsed = parse_snailfish(&input);
-    println!("{:?}", parsed);
-    0
+use std::{thread, time::Duration};
+fn magnitude(
+    input: &str,
+    parsed: &Vec<SnailfishPart>,
+    index: &mut usize) -> String {
+
+    let mut p_input = String::from(input);
+
+    let (_, range) = &parsed[*index];
+    let (_, nrange) = &parsed[*index + 1];
+
+    if nrange.start - range.end == 1 {
+        let first = &input[range.start..range.end].parse::<u64>().unwrap();
+        let cons = &input[nrange.start..nrange.end].parse::<u64>().unwrap();
+        let sum = format!("{}", first * 3 + cons * 2);
+        p_input.replace_range(range.start-1..nrange.end+1, &sum);
+
+        if *index > 0 {
+            *index -= 1;
+        }
+    } else {
+        *index += 1;
+    }
+
+    //thread::sleep(Duration::from_millis(1000));
+    //println!("{:?} ---------------- {}", p_input, index);
+    if p_input.chars().nth(0).unwrap() == '[' {
+        let parsed = parse_snailfish(&p_input);
+        magnitude(&p_input, &parsed, index)
+    } else {
+        p_input
+    }
 }
 
 #[test]
 fn test_magnitude() {
-    assert_eq!(magnitude("[[1,2],[[3,4],5]]"), 143);
-    assert_eq!(magnitude("[[[[0,7],4],[[7,8],[6,0]]],[8,1]]"), 1384);
+    let input = "[[1,2],[[3,4],5]]";
+    let mut parsed = parse_snailfish(&input);
+    assert_eq!(magnitude(input, &mut parsed, &mut 0), String::from("143"));
+
+    let input = "[[[[0,7],4],[[7,8],[6,0]]],[8,1]]";
+    let mut parsed = parse_snailfish(&input);
+    assert_eq!(magnitude(input, &mut parsed, &mut 0), String::from("1384"));
 }
 
 fn add(snailfish: &str, other_snailfish: &str) -> String {
