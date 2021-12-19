@@ -24,7 +24,9 @@ fn main() {
         .split_terminator("\n")
         .collect();
 
-    println!("{:?}", readings);
+    let mut queue = VecDeque::from(readings);
+    let result = queue_sum(&mut queue);
+    println!("{:?}", result);
 }
 
 fn add(snailfish: &str, other_snailfish: &str) -> String {
@@ -125,7 +127,7 @@ fn test_parse_snailfish_3() {
 fn action<'a>(
     input: &str,
     parts: &'a Snailfish,
-    previous_action: &Action) -> Action<'a> {
+    _previous_action: &Action) -> Action<'a> {
 
     for i in 0..parts.len() - 1 {
         let (depth, range) = &parts[i];
@@ -158,11 +160,6 @@ fn action<'a>(
             return Action::Split { range: &parts[i] }
         }
     }
-
-    let prev_range = match previous_action {
-        Action::Split { range }  => Some(&range.1),
-        _ => None
-    };
 
     Action::NonAction
 }
@@ -223,8 +220,6 @@ fn test_digit_split() {
     assert_eq!(digit_split("5"), vec![5]);
 }
 
-
-use std::{thread, time::Duration};
 fn explode(
     input: &str,
     pair: &Range<usize>,
@@ -246,16 +241,9 @@ fn explode(
             result.replace_range(rran.start..rran.end, &r_sum);
             result.replace_range(lran.start..lran.end, &l_sum);
 
-            let find_range = match result.find(slice) {
-                Some(n) => n-1..n+slice.len()+1,
-                None => 0..0
-            };
-
             if left_t < 10 && l_sum.len() == 2 {
-                let old_range = pair.start..pair.end+2;
                 result.replace_range(pair.start..pair.end + 2, "0");
             } else {
-                let old_range = pair.start-1..pair.end+1;
                 result.replace_range(pair.start-1..pair.end + 1, "0");
             }
         },
@@ -271,7 +259,7 @@ fn explode(
             let sum = format!("{}", to_explode[0] + left_t);
 
             result.replace_range(ran.start..ran.end, &sum);
-            if sum.len() == 2 {
+            if left_t < 10 && sum.len() == 2 {
                 result.replace_range(pair.start..pair.end+2, "0");
             } else {
                 result.replace_range(pair.start-1..pair.end + 1, "0");
@@ -567,16 +555,8 @@ fn reduce(snailfish: &str, prev_action: &Action) -> String {
     let parsed = parse_snailfish(snailfish);
     let exec_action = action(&snailfish, &parsed, prev_action);
 
-    let debug = match &exec_action {
-        Action::Explode { pair, left, right } => "exploding: ",
-        Action::Split { range } => "splitting: ",
-        _ => ""
-    };
-
-    print!("{:?}", debug);
     match execute(snailfish, &exec_action) {
         Some(n) => {
-            println!("{}", n);
             reduce(&n, &exec_action)
         },
         None => snailfish.to_string()
@@ -627,7 +607,6 @@ fn queue_sum(queue: &mut VecDeque<&str>) -> String {
 
     queue.iter().fold(String::from(start), |acc, next| {
         let sum = add(&acc, next);
-        println!("STEP 🤓{}", next);
         reduce(&sum, &Action::NonAction)
     })
 }
