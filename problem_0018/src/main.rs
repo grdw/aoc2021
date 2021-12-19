@@ -29,6 +29,18 @@ fn main() {
     println!("{:?}", result);
 }
 
+fn magnitude(input: &str) -> u64 {
+    let parsed = parse_snailfish(&input);
+    println!("{:?}", parsed);
+    0
+}
+
+#[test]
+fn test_magnitude() {
+    assert_eq!(magnitude("[[1,2],[[3,4],5]]"), 143);
+    assert_eq!(magnitude("[[[[0,7],4],[[7,8],[6,0]]],[8,1]]"), 1384);
+}
+
 fn add(snailfish: &str, other_snailfish: &str) -> String {
     let mut result = String::new();
     result.push('[');
