@@ -24,18 +24,35 @@ fn main() {
         .split_terminator("\n")
         .collect();
 
-    let mut queue = VecDeque::from(readings);
+    let mut queue = VecDeque::from(readings.clone());
     let result = queue_sum(&mut queue);
-    let mut parsed = parse_snailfish(&result);
-    println!("{}", magnitude(&result, &parsed, &mut 0));
+    println!("Part 1: {}", magnitude(&result, &mut 0));
+
+    let mut queue = VecDeque::from(readings.clone());
+    let result = queue_magnitude_sum(&mut queue);
+    println!("Part 2: {}", result);
 }
 
-use std::{thread, time::Duration};
-fn magnitude(
-    input: &str,
-    parsed: &Vec<SnailfishPart>,
-    index: &mut usize) -> String {
+fn queue_magnitude_sum(queue: &mut VecDeque<&str>) -> u64 {
+    let start = queue.pop_front().unwrap();
+    let mut max = 0;
 
+    queue.iter().fold(String::from(start), |acc, next| {
+        let sum = add(&acc, next);
+        let mag = magnitude(&acc, &mut 0).parse::<u64>().unwrap();
+
+        if mag > max {
+            max = mag;
+        }
+
+        reduce(&sum, &Action::NonAction)
+    });
+
+    max
+}
+
+fn magnitude(input: &str, index: &mut usize) -> String {
+    let parsed = parse_snailfish(input);
     let mut p_input = String::from(input);
 
     let (_, range) = &parsed[*index];
@@ -57,8 +74,7 @@ fn magnitude(
     //thread::sleep(Duration::from_millis(1000));
     //println!("{:?} ---------------- {}", p_input, index);
     if p_input.chars().nth(0).unwrap() == '[' {
-        let parsed = parse_snailfish(&p_input);
-        magnitude(&p_input, &parsed, index)
+        magnitude(&p_input, index)
     } else {
         p_input
     }
@@ -67,12 +83,10 @@ fn magnitude(
 #[test]
 fn test_magnitude() {
     let input = "[[1,2],[[3,4],5]]";
-    let mut parsed = parse_snailfish(&input);
-    assert_eq!(magnitude(input, &mut parsed, &mut 0), String::from("143"));
+    assert_eq!(magnitude(input, &mut 0), String::from("143"));
 
     let input = "[[[[0,7],4],[[7,8],[6,0]]],[8,1]]";
-    let mut parsed = parse_snailfish(&input);
-    assert_eq!(magnitude(input, &mut parsed, &mut 0), String::from("1384"));
+    assert_eq!(magnitude(input, &mut 0), String::from("1384"));
 }
 
 fn add(snailfish: &str, other_snailfish: &str) -> String {
