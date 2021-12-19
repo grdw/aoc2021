@@ -127,12 +127,9 @@ fn action<'a>(
     parts: &'a Snailfish,
     previous_action: &Action) -> Action<'a> {
 
-    let mut actions = vec![];
-
     for i in 0..parts.len() - 1 {
         let (depth, range) = &parts[i];
         let (_, next_range) = &parts[i + 1];
-        let comma =  &input[range.end..next_range.start];
 
         if *depth > 4 {
             let left = if i > 0 {
@@ -141,14 +138,11 @@ fn action<'a>(
                 None
             };
 
-            actions.push(
-                Action::Explode {
-                    pair: range.start..next_range.end,
-                    left: left,
-                    right: parts.get(i + 2)
-                }
-            );
-            break;
+            return Action::Explode {
+                pair: range.start..next_range.end,
+                left: left,
+                right: parts.get(i + 2)
+            }
         }
     }
 
@@ -161,8 +155,7 @@ fn action<'a>(
             .collect();
 
         if tt.iter().any(|&n| n > 9) {
-            actions.push(Action::Split { range: &parts[i] });
-            break;
+            return Action::Split { range: &parts[i] }
         }
     }
 
@@ -171,34 +164,7 @@ fn action<'a>(
         _ => None
     };
 
-    if actions.is_empty() {
-        Action::NonAction
-    } else if actions.len() == 1 {
-        actions.pop().unwrap()
-    } else {
-        match prev_range {
-            Some(old_range) => {
-                let rev = match (&actions[0], &actions[1]) {
-                    (
-                        Action::Explode { pair, left, right },
-                        Action::Split { range }
-                    ) => {
-                        old_range.end > pair.start
-                    } ,
-                    _ => false
-                };
-
-                if rev {
-                    actions.reverse();
-                }
-                actions.pop().unwrap()
-            },
-            None => {
-                actions.reverse();
-                actions.pop().unwrap()
-            }
-        }
-    }
+    Action::NonAction
 }
 
 #[test]
@@ -231,15 +197,6 @@ fn test_action_split_1() {
 
     assert_eq!(action, Action::Split { range: &(3, 13..15) });
 }
-
-//#[test]
-//fn test_action_split_2() {
-//    let i = "[[[[4,0],[5,4]],[[7,7],[6,0]]],[[7,[5,5]],[[5,7],[[0,11],[8,8]]]]]";
-//    let snailfish = parse_snailfish(&i);
-//    let action = action(&i, &snailfish, &Action::NonAction);
-//
-//    assert_eq!(action, Action::Split { range: &(5, 53..55) });
-//}
 
 #[test]
 fn test_action_split_3() {
@@ -275,7 +232,8 @@ fn explode(
     right: Option<&SnailfishPart>) -> String {
 
     let mut result = String::from(input);
-    let to_explode: Vec<u8> = digit_split(&input[pair.start..pair.end]);
+    let slice = &input[pair.start..pair.end];
+    let to_explode: Vec<u8> = digit_split(slice);
 
     match (left, right) {
         (Some((_, lran)), Some((_, rran))) => {
@@ -288,11 +246,17 @@ fn explode(
             result.replace_range(rran.start..rran.end, &r_sum);
             result.replace_range(lran.start..lran.end, &l_sum);
 
-            if l_sum.len() == 2 {
+            let find_range = match result.find(slice) {
+                Some(n) => n-1..n+slice.len()+1,
+                None => 0..0
+            };
+
+            if left_t < 10 && l_sum.len() == 2 {
+                let old_range = pair.start..pair.end+2;
                 result.replace_range(pair.start..pair.end + 2, "0");
             } else {
+                let old_range = pair.start-1..pair.end+1;
                 result.replace_range(pair.start-1..pair.end + 1, "0");
-
             }
         },
         (None, Some((_, ran))) => {
@@ -634,12 +598,36 @@ fn test_reduce_reddit_help_1() {
     assert_eq!(result, "[[[[4,0],[5,4]],[[7,7],[6,0]]],[[8,[7,7]],[[7,9],[5,0]]]]");
 }
 
+#[test]
+fn test_reduce_reddit_help_2() {
+    let result = reduce("[[[[[4,0],[5,4]],[[7,7],[6,0]]],[[8,[7,7]],[[7,9],[5,0]]]],[[2,[[0,8],[3,4]]],[[[6,7],1],[7,[1,6]]]]]", &Action::NonAction);
+    assert_eq!(result, "[[[[6,7],[6,7]],[[7,7],[0,7]]],[[[8,7],[7,7]],[[8,8],[8,0]]]]");
+}
+
+#[test]
+fn test_reduce_reddit_help_3() {
+    let result = reduce("[[[[[6,7],[6,7]],[[7,7],[0,7]]],[[[8,7],[7,7]],[[8,8],[8,0]]]],[[[[2,4],7],[6,[0,5]]],[[[6,8],[2,8]],[[2,1],[4,5]]]]]", &Action::NonAction);
+    assert_eq!(result, "[[[[7,0],[7,7]],[[7,7],[7,8]]],[[[7,7],[8,8]],[[7,7],[8,7]]]]");
+}
+
+#[test]
+fn test_reduce_reddit_help_4() {
+    let result = reduce("[[[[[7,0],[7,7]],[[7,7],[7,8]]],[[[7,7],[8,8]],[[7,7],[8,7]]]],[7,[5,[[3,8],[1,4]]]]]", &Action::NonAction);
+    assert_eq!(result, "[[[[7,7],[7,8]],[[9,5],[8,7]]],[[[6,8],[0,8]],[[9,9],[9,0]]]]");
+}
+
+#[test]
+fn test_reduce_reddit_help_5() {
+    let result = reduce("[[[[[7,7],[7,8]],[[9,5],[8,7]]],[[[6,8],[0,8]],[[9,9],[9,0]]]],[[2,[2,2]],[8,[8,1]]]]", &Action::NonAction);
+    assert_eq!(result, "[[[[6,6],[6,6]],[[6,0],[6,7]]],[[[7,7],[8,9]],[8,[8,1]]]]");
+}
+
 fn queue_sum(queue: &mut VecDeque<&str>) -> String {
     let start = queue.pop_front().unwrap();
-    println!("STARTING WITH: {}", start);
 
     queue.iter().fold(String::from(start), |acc, next| {
         let sum = add(&acc, next);
+        println!("STEP 🤓{}", next);
         reduce(&sum, &Action::NonAction)
     })
 }
@@ -692,20 +680,19 @@ fn test_reduce_complex_1() {
     let mut snailfish_numbers = VecDeque::from([
         "[[[0,[4,5]],[0,0]],[[[4,5],[2,6]],[9,5]]]",
         "[7,[[[3,7],[4,3]],[[6,3],[8,8]]]]",
-        //"[[2,[[0,8],[3,4]]],[[[6,7],1],[7,[1,6]]]]",
-        //"[[[[2,4],7],[6,[0,5]]],[[[6,8],[2,8]],[[2,1],[4,5]]]]",
-        //"[7,[5,[[3,8],[1,4]]]]",
-        //"[[2,[2,2]],[8,[8,1]]]",
-        //"[2,9]",
-        //"[1,[[[9,3],9],[[9,0],[0,7]]]]",
-        //"[[[5,[7,4]],7],1]",
-        //"[[[[4,2],2],6],[8,7]]"
+        "[[2,[[0,8],[3,4]]],[[[6,7],1],[7,[1,6]]]]",
+        "[[[[2,4],7],[6,[0,5]]],[[[6,8],[2,8]],[[2,1],[4,5]]]]",
+        "[7,[5,[[3,8],[1,4]]]]",
+        "[[2,[2,2]],[8,[8,1]]]",
+        "[2,9]",
+        "[1,[[[9,3],9],[[9,0],[0,7]]]]",
+        "[[[5,[7,4]],7],1]",
+        "[[[[4,2],2],6],[8,7]]"
     ]);
 
     let result = queue_sum(&mut snailfish_numbers);
     assert_eq!(
         result,
-        "[[[[4,0],[5,4]],[[7,7],[6,0]]],[[8,[7,7]],[[7,9],[5,0]]]]"
-        //"[[[[8,7],[7,7]],[[8,6],[7,7]]],[[[0,7],[6,6]],[8,7]]]"
+        "[[[[8,7],[7,7]],[[8,6],[7,7]]],[[[0,7],[6,6]],[8,7]]]"
     );
 }
