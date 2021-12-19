@@ -127,13 +127,12 @@ fn action<'a>(
     parts: &'a Snailfish,
     previous_action: &Action) -> Action<'a> {
 
-    let search_splits = match previous_action {
-        Action::Split { range: _ }  => false,
-        _ => true
-    };
+    let mut actions = vec![];
 
-    for i in 0..parts.len() {
+    for i in 0..parts.len() - 1 {
         let (depth, range) = &parts[i];
+        let (_, next_range) = &parts[i + 1];
+        let comma =  &input[range.end..next_range.start];
 
         if *depth > 4 {
             let left = if i > 0 {
@@ -142,13 +141,14 @@ fn action<'a>(
                 None
             };
 
-            let (_, next_range) = &parts[i + 1];
-
-            return Action::Explode {
-                pair: (range.start..next_range.end),
-                left: left,
-                right: parts.get(i + 2)
-            }
+            actions.push(
+                Action::Explode {
+                    pair: range.start..next_range.end,
+                    left: left,
+                    right: parts.get(i + 2)
+                }
+            );
+            break;
         }
     }
 
@@ -160,14 +160,45 @@ fn action<'a>(
             .map(|n| n.parse::<u8>().unwrap())
             .collect();
 
-        if tt.iter().any(|&n| n > 10) {
-            return Action::Split {
-                range: &parts[i]
-            }
+        if tt.iter().any(|&n| n > 9) {
+            actions.push(Action::Split { range: &parts[i] });
+            break;
         }
     }
 
-    Action::NonAction
+    let prev_range = match previous_action {
+        Action::Split { range }  => Some(&range.1),
+        _ => None
+    };
+
+    if actions.is_empty() {
+        Action::NonAction
+    } else if actions.len() == 1 {
+        actions.pop().unwrap()
+    } else {
+        match prev_range {
+            Some(old_range) => {
+                let rev = match (&actions[0], &actions[1]) {
+                    (
+                        Action::Explode { pair, left, right },
+                        Action::Split { range }
+                    ) => {
+                        old_range.end > pair.start
+                    } ,
+                    _ => false
+                };
+
+                if rev {
+                    actions.reverse();
+                }
+                actions.pop().unwrap()
+            },
+            None => {
+                actions.reverse();
+                actions.pop().unwrap()
+            }
+        }
+    }
 }
 
 #[test]
@@ -235,6 +266,8 @@ fn test_digit_split() {
     assert_eq!(digit_split("5"), vec![5]);
 }
 
+
+use std::{thread, time::Duration};
 fn explode(
     input: &str,
     pair: &Range<usize>,
@@ -242,7 +275,6 @@ fn explode(
     right: Option<&SnailfishPart>) -> String {
 
     let mut result = String::from(input);
-
     let to_explode: Vec<u8> = digit_split(&input[pair.start..pair.end]);
 
     match (left, right) {
@@ -260,6 +292,7 @@ fn explode(
                 result.replace_range(pair.start..pair.end + 2, "0");
             } else {
                 result.replace_range(pair.start-1..pair.end + 1, "0");
+
             }
         },
         (None, Some((_, ran))) => {
@@ -274,7 +307,11 @@ fn explode(
             let sum = format!("{}", to_explode[0] + left_t);
 
             result.replace_range(ran.start..ran.end, &sum);
-            result.replace_range(pair.start-1..pair.end+1, "0");
+            if sum.len() == 2 {
+                result.replace_range(pair.start..pair.end+2, "0");
+            } else {
+                result.replace_range(pair.start-1..pair.end + 1, "0");
+            }
         },
         _ => panic!("Invalid action"),
     }
@@ -514,6 +551,25 @@ fn test_explode_10() {
 }
 
 #[test]
+fn test_explode_11() {
+    let snailfish = "[[[[4,0],[5,0]],[[[4,5],[2,6]],[9,5]]],[7,[[[3,7],[4,3]],[[6,3],[8,8]]]]]";
+    let parsed = parse_snailfish(&snailfish);
+    let action = action(&snailfish, &parsed, &Action::NonAction);
+
+    assert_eq!(
+        action,
+        Action::Explode {
+            pair: 19..22,
+            left: Some(&(4, 12..13)),
+            right: Some(&(5, 25..26))
+        }
+    );
+
+    let result = execute(&snailfish, &action).unwrap();
+    assert_eq!(result, String::from("[[[[4,0],[5,4]],[[0,[7,6]],[9,5]]],[7,[[[3,7],[4,3]],[[6,3],[8,8]]]]]"));
+}
+
+#[test]
 fn test_split_1() {
     let snailfish = "[[[[0,7],4],[15,[0,13]]],[1,1]]";
     let parsed = parse_snailfish(&snailfish);
@@ -547,7 +603,13 @@ fn reduce(snailfish: &str, prev_action: &Action) -> String {
     let parsed = parse_snailfish(snailfish);
     let exec_action = action(&snailfish, &parsed, prev_action);
 
-    println!("{:?}", exec_action);
+    let debug = match &exec_action {
+        Action::Explode { pair, left, right } => "exploding: ",
+        Action::Split { range } => "splitting: ",
+        _ => ""
+    };
+
+    print!("{:?}", debug);
     match execute(snailfish, &exec_action) {
         Some(n) => {
             println!("{}", n);
@@ -566,12 +628,18 @@ fn test_reduce_simple() {
     assert_eq!(result, "[[[[0,7],4],[[7,8],[6,0]]],[8,1]]");
 }
 
+#[test]
+fn test_reduce_reddit_help_1() {
+    let result = reduce("[[[[0,[4,5]],[0,0]],[[[4,5],[2,6]],[9,5]]],[7,[[[3,7],[4,3]],[[6,3],[8,8]]]]]", &Action::NonAction);
+    assert_eq!(result, "[[[[4,0],[5,4]],[[7,7],[6,0]]],[[8,[7,7]],[[7,9],[5,0]]]]");
+}
+
 fn queue_sum(queue: &mut VecDeque<&str>) -> String {
     let start = queue.pop_front().unwrap();
+    println!("STARTING WITH: {}", start);
 
     queue.iter().fold(String::from(start), |acc, next| {
         let sum = add(&acc, next);
-        println!("{}", sum);
         reduce(&sum, &Action::NonAction)
     })
 }
@@ -638,5 +706,6 @@ fn test_reduce_complex_1() {
     assert_eq!(
         result,
         "[[[[4,0],[5,4]],[[7,7],[6,0]]],[[8,[7,7]],[[7,9],[5,0]]]]"
+        //"[[[[8,7],[7,7]],[[8,6],[7,7]]],[[[0,7],[6,6]],[8,7]]]"
     );
 }
