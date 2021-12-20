@@ -1,19 +1,7 @@
-use crate::snailfish::Snailfish;
-use core::ops::Range;
-
-#[derive(Debug, Eq, PartialEq)]
-pub enum Action {
-    Explode {
-        pair: Range<usize>,
-        left: Option<Range<usize>>,
-        right: Option<Range<usize>>
-    },
-    Split { range: Range<usize> },
-    NonAction
-}
+use crate::snailfish::{Snailfish, Action};
 
 impl Snailfish {
-    fn action(&self) -> Action {
+    pub fn action(&self) -> Action {
         let parts = self.parse();
 
         for i in 0..parts.len() - 1 {
@@ -26,18 +14,21 @@ impl Snailfish {
 
             if part.depth > 4 {
                 let left = if i > 0 {
-                    let l = &parts[i - 1];
-                    Some(l.range.clone())
+                    let part = &parts[i - 1];
+                    Some(part.range.clone())
                 } else {
                     None
                 };
 
-                let right_part = &parts[i + 2];
+                let right = match parts.get(i + 2) {
+                    Some(part) => Some(part.range.clone()),
+                    None => None
+                };
 
                 return Action::Explode {
                     pair: part.range.start..next_part.range.end,
                     left: left,
-                    right: Some(right_part.range.clone())
+                    right: right
                 }
             }
 

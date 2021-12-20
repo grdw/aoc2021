@@ -1,7 +1,20 @@
 mod action;
 mod parser;
+mod executor;
 
 use std::ops::Add;
+use core::ops::Range;
+
+#[derive(Debug, Eq, PartialEq)]
+pub enum Action {
+    Explode {
+        pair: Range<usize>,
+        left: Option<Range<usize>>,
+        right: Option<Range<usize>>
+    },
+    Split { range: Range<usize> },
+    NonAction
+}
 
 pub struct Snailfish {
     input: String
