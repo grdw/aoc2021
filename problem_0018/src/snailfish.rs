@@ -1,6 +1,7 @@
 mod action;
 mod parser;
 mod executor;
+mod reducer;
 
 use std::ops::Add;
 use core::ops::Range;

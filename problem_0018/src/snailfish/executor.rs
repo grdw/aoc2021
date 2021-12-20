@@ -16,25 +16,42 @@ impl Snailfish {
         let slice = &self.input[pair.start..pair.end];
         let to_explode: Vec<u8> = digit_split(slice);
 
-        if let Some(ran) = left {
-            let left_t = self.input[ran.start..ran.end].parse::<u8>().unwrap();
-            let sum = format!("{}", to_explode[0] + left_t);
-            let current_len = result.len();
+        match (left, right) {
+            (Some(lran), Some(rran)) => {
+                let right_t = self.input[rran.start..rran.end].parse::<u8>().unwrap();
+                let left_t = self.input[lran.start..lran.end].parse::<u8>().unwrap();
 
-            result.replace_range(ran.start..ran.end, &sum);
-            shift = result.len() - current_len;
+                let l_sum = format!("{}", to_explode[0] + left_t);
+                let r_sum = format!("{}", to_explode[1] + right_t);
 
-            if right.is_none() {
-                result.replace_range(pair.start-1..pair.end + 1, "0");
-            }
-        }
+                result.replace_range(rran.start..rran.end, &r_sum);
+                result.replace_range(lran.start..lran.end, &l_sum);
 
-        if let Some(ran) = right {
-           let right_t = self.input[ran.start..ran.end].parse::<u8>().unwrap();
-           let sum = format!("{}", to_explode[1] + right_t);
+                if left_t < 10 && l_sum.len() == 2 {
+                    result.replace_range(pair.start..pair.end + 2, "0");
+                } else {
+                    result.replace_range(pair.start-1..pair.end + 1, "0");
+                }
+            },
+            (None, Some(ran)) => {
+                let right_t = self.input[ran.start..ran.end].parse::<u8>().unwrap();
+                let sum = format!("{}", to_explode[1] + right_t);
 
-           result.replace_range(ran.start+shift..ran.end+shift, &sum);
-           result.replace_range(pair.start-1+shift..pair.end+1+shift, "0");
+                result.replace_range(ran.start..ran.end, &sum);
+                result.replace_range(pair.start-1..pair.end+1, "0");
+            },
+            (Some(ran), None) => {
+                let left_t = self.input[ran.start..ran.end].parse::<u8>().unwrap();
+                let sum = format!("{}", to_explode[0] + left_t);
+
+                result.replace_range(ran.start..ran.end, &sum);
+                if left_t < 10 && sum.len() == 2 {
+                    result.replace_range(pair.start..pair.end+2, "0");
+                } else {
+                    result.replace_range(pair.start-1..pair.end + 1, "0");
+                }
+            },
+            _ => panic!("Invalid action"),
         }
 
         Snailfish::new(&result)
@@ -50,7 +67,7 @@ impl Snailfish {
         Snailfish::new(&result)
     }
 
-    fn execute(&self) -> Option<Snailfish> {
+    pub fn execute(&self) -> Option<Snailfish> {
         match self.action() {
             Action::Explode { pair, left, right } =>
                 Some(self.explode(pair, left, right)),
