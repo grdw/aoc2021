@@ -1,8 +1,7 @@
 use crate::snailfish::Snailfish;
 
 impl Snailfish {
-    fn reduce(&self) -> Snailfish {
-        println!("{}", self.input);
+    pub fn reduce(&self) -> Snailfish {
         match self.execute() {
             Some(snailfish) => snailfish.reduce(),
             None => Snailfish::new(&self.input)

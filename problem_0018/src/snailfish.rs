@@ -18,11 +18,11 @@ pub enum Action {
 }
 
 pub struct Snailfish {
-    input: String
+    pub input: String
 }
 
 impl Snailfish {
-    fn new(input: &str) -> Snailfish {
+    pub fn new(input: &str) -> Snailfish {
         Snailfish { input: String::from(input) }
     }
 }
