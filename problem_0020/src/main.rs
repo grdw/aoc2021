@@ -101,15 +101,14 @@ fn test_binary() {
     let grid = grid(&test_image);
     display(&grid);
 
-    assert_eq!(binary(&grid, 2, 2, 0), 34);
+    assert_eq!(binary(&grid, 2, 2, '.'), 34);
 }
 
-fn enhance(grid: &mut Grid, algorithm: &str, enhance: usize, c: char) {
+fn enhance(grid: &mut Grid, algorithm: &str, c: char) {
     let height = grid.len();
     let width = grid[0].len();
     let mut replacements = vec![];
 
-    println!("{}", enhance);
     for y in 0..height {
         for x in 0..width {
             let alg_index = binary(grid, x, y, c);
@@ -148,17 +147,10 @@ fn repeat_enhance(
     algorithm: &str,
     num: usize) {
 
-    println!("ORIGINAL SQUARE:");
-    display(grid);
-
     for i in 0..num {
         let fill_char = if i % 2 == 0 { '.' } else { '#' };
         add_bars(grid, fill_char);
-        println!("ADDING BARS:");
-        display(grid);
-        enhance(grid, algorithm, 1 + i, fill_char);
-        println!("AFTER ENHANCING:");
-        display(grid);
+        enhance(grid, algorithm, fill_char);
     }
 }
 
