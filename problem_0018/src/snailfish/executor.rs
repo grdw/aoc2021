@@ -41,7 +41,13 @@ impl Snailfish {
     }
 
     fn split(&self, range: Range<usize>) -> Snailfish {
-        Snailfish::new("")
+        let mut result = self.input.clone();
+        let number = self.input[range.start..range.end].parse::<u8>().unwrap();
+        let div = number / 2;
+        let pair = format!("[{},{}]", div, number - div);
+
+        result.replace_range(range.start..range.end, &pair);
+        Snailfish::new(&result)
     }
 
     fn execute(&self) -> Option<Snailfish> {
@@ -148,4 +154,11 @@ fn test_explode_11() {
     let result = snailfish.execute().unwrap();
 
     assert_eq!(result.input, String::from("[[[[4,0],[5,4]],[[0,[7,6]],[9,5]]],[7,[[[3,7],[4,3]],[[6,3],[8,8]]]]]"));
+}
+
+#[test]
+fn test_split() {
+    let snailfish = Snailfish::new("[[[[0,7],4],[15,[0,13]]],[1,1]]");
+    let result = snailfish.execute().unwrap();
+    assert_eq!(result.input, String::from("[[[[0,7],4],[[7,8],[0,13]]],[1,1]]"));
 }
