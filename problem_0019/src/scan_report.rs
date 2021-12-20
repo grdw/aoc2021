@@ -1,11 +1,11 @@
-#[derive(Debug)]
+#[derive(Debug, Eq, Hash, Clone, PartialEq)]
 enum Type {
     Baecon,
     Scanner
 }
 
-#[derive(Debug)]
-struct Point {
+#[derive(Debug, Eq, Hash, Clone, PartialEq)]
+pub struct Point {
     x: i32,
     y: i32,
     z: i32,
@@ -13,18 +13,19 @@ struct Point {
 }
 
 impl Point {
-    fn rotations(&self) -> Vec<Point> {
+    fn rotations(&self, index: usize) -> Point {
         vec![
             Point { t: Type::Baecon, x: self.x, y: self.y, z: self.z },
             Point { t: Type::Baecon, x: -self.x, y: -self.z, z: -self.y },
             Point { t: Type::Baecon, x: -self.z, y: self.y, z: self.x },
             Point { t: Type::Baecon, x: self.z, y: -self.y, z: self.x },
             Point { t: Type::Baecon, x: -self.y, y: self.z, z: -self.x }
-        ]
+        ][index].clone()
     }
 }
 
 const SCAN_RANGE: i32 = 1000;
+const MAX_ROTATIONS: usize = 5;
 
 pub struct ScanReport {
     header: String,
@@ -49,6 +50,16 @@ impl ScanReport {
             .collect();
 
         ScanReport { header: header.to_string(), baecons: baecons }
+    }
+
+    pub fn rotations(&self) -> Vec<Point> {
+        let mut points = vec![];
+        for point in &self.baecons {
+            for i in 0..MAX_ROTATIONS {
+                points.push(point.rotations(i));
+            }
+        }
+        points
     }
 }
 
@@ -83,8 +94,5 @@ fn test_scan_report() {
                  -689,893,-402";
 
     let scan_report = ScanReport::from_str(input);
-    for p in &scan_report.baecons {
-        println!("{:?}", p.rotations()[1]);
-    }
     assert_eq!(scan_report.baecons.len(), 26);
 }
