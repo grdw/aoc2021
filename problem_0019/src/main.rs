@@ -1,15 +1,15 @@
-enum Type {
-    Baecon,
-    Scanner
-}
+mod scan_report;
 
-struct Point {
-    x: i32,
-    y: i32,
-    z: i32,
-    t: Type
-}
+use std::fs;
+use scan_report::ScanReport;
 
 fn main() {
+    let contents = fs::read_to_string("input")
+                      .unwrap_or("".to_string());
+
+    let readings: Vec<ScanReport> = contents
+        .split_terminator("\n\n")
+        .map(|l| ScanReport::from_str(l))
+        .collect();
     println!("Hello, world!");
 }
