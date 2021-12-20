@@ -13,6 +13,9 @@ fn main() {
     let mut grid = grid(&contents);
     repeat_enhance(&mut grid, &algorithm, 2);
     println!("Part 1: {}", lit_points(&grid));
+
+    repeat_enhance(&mut grid, &algorithm, 48);
+    println!("Part 2: {}", lit_points(&grid));
 }
 
 fn add_bars(contents: &mut Grid, c: char) {
