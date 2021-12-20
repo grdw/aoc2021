@@ -15,20 +15,20 @@ fn main() {
     println!("Part 1: {}", lit_points(&grid));
 }
 
-fn add_bars(contents: &mut Grid) {
+fn add_bars(contents: &mut Grid, c: char) {
     let num = 2;
     let height = contents.len();
 
     for y in 0..height {
         for _ in 0..num {
-            contents[y].insert(0, '.');
-            contents[y].push('.');
+            contents[y].insert(0, c);
+            contents[y].push(c);
         }
     }
 
     for _ in 0..2 {
-        contents.insert(0, vec!['.'; height + 4]);
-        contents.push(vec!['.'; height + 4]);
+        contents.insert(0, vec![c; height + 4]);
+        contents.push(vec![c; height + 4]);
     }
 }
 
@@ -58,7 +58,7 @@ fn test_grid() {
     assert_eq!(grid[0].len(), 5);
 }
 
-fn binary(grid: &Grid, x: usize, y: usize) -> usize {
+fn binary(grid: &Grid, x: usize, y: usize, c: char) -> usize {
     let points = vec![
         (-1, -1), (-1, 0), (-1, 1),
         (0, -1),  (0, 0), (0, 1),
@@ -73,7 +73,7 @@ fn binary(grid: &Grid, x: usize, y: usize) -> usize {
 
         let temp = vec![];
         let row = grid.get(y as usize).unwrap_or(&temp);
-        let point = row.get(x as usize).unwrap_or(&'.');
+        let point = row.get(x as usize).unwrap_or(&c);
 
         let binary = match point {
             '.' => '0',
@@ -98,10 +98,10 @@ fn test_binary() {
     let grid = grid(&test_image);
     display(&grid);
 
-    assert_eq!(binary(&grid, 2, 2), 34);
+    assert_eq!(binary(&grid, 2, 2, 0), 34);
 }
 
-fn enhance(grid: &mut Grid, algorithm: &str, enhance: usize) {
+fn enhance(grid: &mut Grid, algorithm: &str, enhance: usize, c: char) {
     let height = grid.len();
     let width = grid[0].len();
     let mut replacements = vec![];
@@ -109,23 +109,7 @@ fn enhance(grid: &mut Grid, algorithm: &str, enhance: usize) {
     println!("{}", enhance);
     for y in 0..height {
         for x in 0..width {
-            if x < enhance {
-                continue;
-            }
-
-            if x >= width - enhance {
-                continue;
-            }
-
-            if y < enhance {
-                continue;
-            }
-
-            if y >= height - enhance {
-                continue;
-            }
-
-            let alg_index = binary(grid, x, y);
+            let alg_index = binary(grid, x, y, c);
             let c = algorithm.chars().nth(alg_index).unwrap();
             replacements.push((x, y, c));
         }
@@ -165,10 +149,11 @@ fn repeat_enhance(
     display(grid);
 
     for i in 0..num {
-        add_bars(grid);
+        let fill_char = if i % 2 == 0 { '.' } else { '#' };
+        add_bars(grid, fill_char);
         println!("ADDING BARS:");
         display(grid);
-        enhance(grid, algorithm, 1 + i);
+        enhance(grid, algorithm, 1 + i, fill_char);
         println!("AFTER ENHANCING:");
         display(grid);
     }
