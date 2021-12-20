@@ -11,5 +11,6 @@ fn main() {
         .split_terminator("\n\n")
         .map(|l| ScanReport::from_str(l))
         .collect();
+
     println!("Hello, world!");
 }
