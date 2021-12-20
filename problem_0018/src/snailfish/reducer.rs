@@ -2,8 +2,7 @@ use crate::snailfish::Snailfish;
 
 impl Snailfish {
     fn reduce(&self) -> Snailfish {
-        let exec_action = self.action();
-
+        println!("{}", self.input);
         match self.execute() {
             Some(snailfish) => snailfish.reduce(),
             None => Snailfish::new(&self.input)
@@ -22,9 +21,9 @@ fn test_reduce_simple() {
 
 #[test]
 fn test_reduce_reddit_help_1() {
-    let snailfish = Snailfish::new("[[[[0,[4,5]],[0,0]],[[[4,5],[2,6]],[9,5]]],[7,[[[3,7],[4,3]],[[6,3],[8,8]]]]]");
+    let snailfish = Snailfish::new("[[[[[6,6],[6,6]],[[6,0],[6,7]]],[[[7,7],[8,9]],[8,[8,1]]]],[2,9]]");
     let result = snailfish.reduce();
-    assert_eq!(&result.input, "[[[[4,0],[5,4]],[[7,7],[6,0]]],[[8,[7,7]],[[7,9],[5,0]]]]");
+    assert_eq!(&result.input, "[[[[6,6],[7,7]],[[0,7],[7,7]]],[[[5,5],[5,6]],9]]");
 }
 
 #[test]

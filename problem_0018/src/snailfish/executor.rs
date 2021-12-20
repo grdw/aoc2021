@@ -12,7 +12,6 @@ impl Snailfish {
                right: Option<Range<usize>>) -> Snailfish {
 
         let mut result = self.input.clone();
-        let mut shift = 0;
         let slice = &self.input[pair.start..pair.end];
         let to_explode: Vec<u8> = digit_split(slice);
 

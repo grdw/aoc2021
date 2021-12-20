@@ -7,10 +7,6 @@ impl Snailfish {
         for i in 0..parts.len() - 1 {
             let part = &parts[i];
             let next_part = &parts[i + 1];
-            let number = self
-                .input[part.range.clone()]
-                .parse::<u8>()
-                .unwrap();
 
             if part.depth > 4 {
                 let left = if i > 0 {
@@ -31,6 +27,15 @@ impl Snailfish {
                     right: right
                 }
             }
+        }
+
+        for i in 0..parts.len() {
+            let part = &parts[i];
+
+            let number = self
+                .input[part.range.clone()]
+                .parse::<u8>()
+                .unwrap();
 
             if number > 9 {
                 return Action::Split {
