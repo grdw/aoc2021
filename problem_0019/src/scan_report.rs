@@ -1,14 +1,30 @@
+#[derive(Debug)]
 enum Type {
     Baecon,
     Scanner
 }
 
+#[derive(Debug)]
 struct Point {
     x: i32,
     y: i32,
     z: i32,
     t: Type
 }
+
+impl Point {
+    fn rotations(&self) -> Vec<Point> {
+        vec![
+            Point { t: Type::Baecon, x: self.x, y: self.y, z: self.z },
+            Point { t: Type::Baecon, x: -self.x, y: -self.z, z: -self.y },
+            Point { t: Type::Baecon, x: -self.z, y: self.y, z: self.x },
+            Point { t: Type::Baecon, x: self.z, y: -self.y, z: self.x },
+            Point { t: Type::Baecon, x: -self.y, y: self.z, z: -self.x }
+        ]
+    }
+}
+
+const SCAN_RANGE: i32 = 1000;
 
 pub struct ScanReport {
     header: String,
@@ -67,5 +83,8 @@ fn test_scan_report() {
                  -689,893,-402";
 
     let scan_report = ScanReport::from_str(input);
+    for p in &scan_report.baecons {
+        println!("{:?}", p.rotations()[1]);
+    }
     assert_eq!(scan_report.baecons.len(), 26);
 }
