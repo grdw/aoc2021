@@ -11,34 +11,19 @@ fn main() {
                       .unwrap_or("".to_string());
 
     let mut grid = grid(&contents);
-    for _ in 0..2 {
-        enhance(&mut grid, &algorithm);
-    }
-
     display(&grid);
+    repeat_enhance(&mut grid, &algorithm, 2);
     println!("Part 1: {}", lit_points(&grid));
 }
 
 fn grid(contents: &str) -> Grid {
     let rows: Vec<&str> = contents.split_terminator("\n").collect();
-    let size = rows.len();
     let mut points = vec![];
 
     for row in rows {
-        let mut n: Vec<char> = row.chars().collect();
-
-        for _ in 0..3 {
-            n.push('.');
-            n.insert(0, '.');
-        }
+        let n: Vec<char> = row.chars().collect();
 
         points.push(n);
-    }
-
-    let row = vec!['.'; size + 6];
-    for _ in 0..3 {
-        points.push(row.clone());
-        points.insert(0, row.clone());
     }
 
     points
@@ -53,11 +38,11 @@ fn test_grid() {
                       ..###";
 
     let grid = grid(&test_image);
-    assert_eq!(grid.len(), 11);
-    assert_eq!(grid[0].len(), 11);
+    assert_eq!(grid.len(), 5);
+    assert_eq!(grid[0].len(), 5);
 }
 
-fn binary(grid: &Grid, x: usize, y: usize) -> usize {
+fn binary(grid: &Grid, x: usize, y: usize, state: bool) -> usize {
     let points = vec![
         (-1, -1), (-1, 0), (-1, 1),
         (0, -1),  (0, 0), (0, 1),
@@ -72,7 +57,12 @@ fn binary(grid: &Grid, x: usize, y: usize) -> usize {
 
         let temp = vec![];
         let row = grid.get(y as usize).unwrap_or(&temp);
-        let point = row.get(x as usize).unwrap_or(&'.');
+        let default = if (state) {
+            '.'
+        } else {
+            '#'
+        };
+        let point = row.get(x as usize).unwrap_or(&default);
 
         let binary = match point {
             '.' => '0',
@@ -97,17 +87,19 @@ fn test_binary() {
     let grid = grid(&test_image);
     display(&grid);
 
-    assert_eq!(binary(&grid, 5, 5), 34);
+    assert_eq!(binary(&grid, 2, 2, true), 34);
 }
 
-fn enhance(grid: &mut Grid, algorithm: &str) {
+fn enhance(grid: &mut Grid, algorithm: &str, enhance: usize) {
     let height = grid.len();
     let width = grid[0].len();
     let mut replacements = vec![];
+    let offset = enhance;
+    println!("{}", offset);
 
     for y in 0..height {
         for x in 0..width {
-            let alg_index = binary(grid, x, y);
+            let alg_index = binary(grid, x, y, enhance % 2 == 0);
             let c = algorithm.chars().nth(alg_index).unwrap();
             replacements.push((x, y, c));
         }
@@ -116,18 +108,10 @@ fn enhance(grid: &mut Grid, algorithm: &str) {
     for (x, y, c) in replacements {
         grid[y][x] = c;
     }
-
-    // Extend for next iterations
-    for y in 0..height {
-        grid[y].insert(0, '.');
-        grid[y].push('.');
-    }
-
-    grid.insert(0, vec!['.'; height + 2]);
-    grid.push(vec!['.'; height + 2]);
 }
 
 fn display(grid: &Grid) {
+    println!("");
     for row in grid {
         let s: String = row.into_iter().collect();
         println!("{}", s);
@@ -146,6 +130,17 @@ fn lit_points(grid: &Grid) -> u64 {
     count
 }
 
+fn repeat_enhance(
+    grid: &mut Grid,
+    algorithm: &str,
+    num: usize) {
+
+    for i in 0..num {
+        enhance(grid, algorithm, 1 + i);
+        display(grid);
+    }
+}
+
 #[test]
 fn test_enhance() {
     let test_image = "#..#.\n\
@@ -158,9 +153,7 @@ fn test_enhance() {
                       .unwrap_or("".to_string());
 
     let mut grid = grid(&test_image);
-    for _ in 0..2 {
-        enhance(&mut grid, &algorithm);
-    }
+    repeat_enhance(&mut grid, &algorithm, 2);
 
     assert_eq!(lit_points(&grid), 35);
 }
