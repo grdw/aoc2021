@@ -2,6 +2,7 @@ mod action;
 mod parser;
 mod executor;
 mod reducer;
+pub mod magnitude;
 
 use std::ops::Add;
 use core::ops::Range;
@@ -14,6 +15,7 @@ pub enum Action {
         right: Option<Range<usize>>
     },
     Split { range: Range<usize> },
+    Magnitude { range: Range<usize> },
     NonAction
 }
 

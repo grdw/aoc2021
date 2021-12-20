@@ -2,6 +2,7 @@ mod snailfish;
 
 use std::fs;
 use snailfish::Snailfish;
+use snailfish::magnitude;
 
 fn main() {
     let contents = fs::read_to_string("input")
@@ -12,11 +13,10 @@ fn main() {
         .collect();
 
     let snailfish = queue_sum(readings.clone());
-    //println!("Part 1: {}", snailfish.magnitude());
+    println!("Part 1: {}", magnitude::magnitude(&snailfish));
 
-    //let mut queue = VecDeque::from(readings.clone());
-    //let result = queue_magnitude_sum(&mut queue);
-    //println!("Part 2: {}", result);
+    let result = max_magnitude(readings.clone());
+    println!("Part 2: {}", result);
 }
 
 fn queue_sum(mut queue: Vec<&str>) -> Snailfish {
@@ -28,45 +28,6 @@ fn queue_sum(mut queue: Vec<&str>) -> Snailfish {
         sum.reduce()
     })
 }
-
-//fn magnitude(input: &str, index: &mut usize) -> String {
-//    let parsed = parse_snailfish(input);
-//    let mut p_input = String::from(input);
-//
-//    let (_, range) = &parsed[*index];
-//    let (_, nrange) = &parsed[*index + 1];
-//
-//    if nrange.start - range.end == 1 {
-//        let first = &input[range.start..range.end].parse::<u64>().unwrap();
-//        let cons = &input[nrange.start..nrange.end].parse::<u64>().unwrap();
-//        let sum = format!("{}", first * 3 + cons * 2);
-//        p_input.replace_range(range.start-1..nrange.end+1, &sum);
-//
-//        if *index > 0 {
-//            *index -= 1;
-//        }
-//    } else {
-//        *index += 1;
-//    }
-//
-//    //thread::sleep(Duration::from_millis(1000));
-//    //println!("{:?} ---------------- {}", p_input, index);
-//    if p_input.chars().nth(0).unwrap() == '[' {
-//        magnitude(&p_input, index)
-//    } else {
-//        p_input
-//    }
-//}
-//
-//#[test]
-//fn test_magnitude() {
-//    let input = "[[1,2],[[3,4],5]]";
-//    assert_eq!(magnitude(input, &mut 0), String::from("143"));
-//
-//    let input = "[[[[0,7],4],[[7,8],[6,0]]],[8,1]]";
-//    assert_eq!(magnitude(input, &mut 0), String::from("1384"));
-//}
-//
 
 #[test]
 fn test_queue_sum() {
@@ -88,4 +49,45 @@ fn test_queue_sum() {
         &result.input,
         "[[[[8,7],[7,7]],[[8,6],[7,7]]],[[[0,7],[6,6]],[8,7]]]"
     );
+}
+
+fn max_magnitude(queue: Vec<&str>) -> u64 {
+    let mut max = 0;
+
+    for p in &queue {
+        for n in &queue {
+            if p == n {
+                continue
+            }
+
+            let snailfish_1 = Snailfish::new(p);
+            let snailfish_2 = Snailfish::new(n);
+            let sum = snailfish_1 + snailfish_2;
+            let magnitude = magnitude::magnitude(&sum.reduce());
+
+            if magnitude > max {
+                max = magnitude
+            }
+        }
+    }
+
+    max
+}
+
+#[test]
+fn test_max_magnitude() {
+    let mut snailfish_numbers = vec![
+		"[[[0,[5,8]],[[1,7],[9,6]]],[[4,[1,2]],[[1,4],2]]]",
+		"[[[5,[2,8]],4],[5,[[9,9],0]]]",
+		"[6,[[[6,2],[5,6]],[[7,6],[4,7]]]]",
+		"[[[6,[0,7]],[0,9]],[4,[9,[9,0]]]]",
+		"[[[7,[6,4]],[3,[1,3]]],[[[5,5],1],9]]",
+		"[[6,[[7,3],[3,2]]],[[[3,8],[5,7]],4]]",
+		"[[[[5,4],[7,7]],8],[[8,3],8]]",
+		"[[9,3],[[9,9],[6,[4,9]]]]",
+		"[[2,[[7,7],7]],[[5,8],[[9,3],[0,2]]]]",
+		"[[[[5,2],5],[8,[3,7]]],[[5,[7,5]],[4,4]]]"
+	];
+
+    assert_eq!(max_magnitude(snailfish_numbers.clone()), 3993);
 }
