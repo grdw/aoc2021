@@ -1,3 +1,5 @@
+use std::fs;
+
 #[derive(Debug, Eq, Hash, Clone, PartialEq)]
 enum Type {
     Baecon,
@@ -10,18 +12,6 @@ pub struct Point {
     y: i32,
     z: i32,
     t: Type
-}
-
-impl Point {
-    fn rotations(&self, index: usize) -> Point {
-        vec![
-            Point { t: Type::Baecon, x: self.x, y: self.y, z: self.z },
-            Point { t: Type::Baecon, x: -self.x, y: -self.z, z: -self.y },
-            Point { t: Type::Baecon, x: -self.z, y: self.y, z: self.x },
-            Point { t: Type::Baecon, x: self.z, y: -self.y, z: self.x },
-            Point { t: Type::Baecon, x: -self.y, y: self.z, z: -self.x }
-        ][index].clone()
-    }
 }
 
 const SCAN_RANGE: i32 = 1000;
@@ -52,14 +42,14 @@ impl ScanReport {
         ScanReport { header: header.to_string(), baecons: baecons }
     }
 
-    pub fn rotations(&self) -> Vec<Point> {
-        let mut points = vec![];
-        for point in &self.baecons {
-            for i in 0..MAX_ROTATIONS {
-                points.push(point.rotations(i));
-            }
+    pub fn location(&self, first: &ScanReport) -> Point {
+        for p in &first.baecons[0..5] {
+            println!("FIRST BAECON: {},{},{}", p.x, p.y, p.z);
         }
-        points
+        for p in &self.baecons[0..5] {
+            println!("CURRENT BAECON: {},{},{}", p.x, p.y, p.z);
+        }
+        Point { t: Type::Scanner, x: 0, y: 0, z: 0 }
     }
 }
 
@@ -95,4 +85,23 @@ fn test_scan_report() {
 
     let scan_report = ScanReport::from_str(input);
     assert_eq!(scan_report.baecons.len(), 26);
+}
+
+#[test]
+fn test_scanner_location() {
+    let contents = fs::read_to_string("test_input")
+                      .unwrap_or("".to_string());
+
+    let mut readings: Vec<ScanReport> = contents
+        .split_terminator("\n\n")
+        .map(|l| ScanReport::from_str(l))
+        .collect();
+
+    let first_report = readings.remove(0);
+    let second_report = readings.remove(0);
+
+    assert_eq!(
+        second_report.location(&first_report),
+        Point { t: Type::Scanner, x: 68, y: -1246, z: -43 }
+    );
 }

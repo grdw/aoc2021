@@ -17,13 +17,7 @@ fn main() {
 }
 
 fn count_unique_baecons(readings: &Vec<ScanReport>) -> usize {
-    let mut points = vec![];
-    for scan_report in readings {
-        for point in scan_report.rotations() {
-            points.push(point);
-        }
-    }
-    points.len()
+    0
 }
 
 #[test]
