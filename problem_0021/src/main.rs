@@ -19,31 +19,28 @@ struct Player {
 
 impl Player {
     fn new(position: u64) -> Player {
-        Player { position: position, points: 0 }
+        Player { position: position - 1, points: 0 }
     }
 
+    // assume the playing board as a vector:
+    // {1,2,3,4,5,6,7,8,9,10}
+    // [0,1,2,3,4,5,6,7,8,9]
     fn roll(&mut self, r1: u64, r2: u64, r3: u64) {
         self.position += r1 + r2 + r3;
-        self.position %= 10;
+        let n = (self.position % 10) + 1;
 
-        if self.position == 0 {
-            self.position = 10;
-        }
-
-        self.points += self.position;
+        self.points += n;
     }
 }
 
 #[test]
-fn test_player() {
+fn test_player_1() {
     let mut player = Player::new(7);
     player.roll(1, 2, 3);
 
-    assert_eq!(player.position, 3);
     assert_eq!(player.points, 3);
 
     player.roll(7, 8, 9);
-    assert_eq!(player.position, 7);
     assert_eq!(player.points, 10);
 }
 
@@ -52,15 +49,12 @@ fn test_player_2() {
     let mut player = Player::new(4);
     player.roll(1, 2, 3);
 
-    assert_eq!(player.position, 10);
     assert_eq!(player.points, 10);
 
     player.roll(7, 8, 9);
-    assert_eq!(player.position, 4);
     assert_eq!(player.points, 14);
 
     player.roll(13, 14, 15);
-    assert_eq!(player.position, 6);
     assert_eq!(player.points, 20);
 }
 
@@ -164,4 +158,3 @@ fn test_part_1() {
     assert_eq!(game.rolls, 993);
     assert_eq!(game.part_1(), 739785);
 }
-
