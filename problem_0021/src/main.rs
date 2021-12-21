@@ -1,4 +1,5 @@
 mod game_thousand;
+mod dimension_game;
 
 use game_thousand::Game;
 
