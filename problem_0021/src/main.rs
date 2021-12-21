@@ -1,5 +1,15 @@
 fn main() {
-    println!("Hello, world!");
+    let player_one = Player::new(5);
+    let player_two = Player::new(9);
+    let dice = Dice::new(100);
+    let mut game = Game {
+        dice: dice,
+        players: vec![player_one, player_two],
+        rolls: 0
+    };
+    game.play();
+
+    println!("Part 1: {}", game.part_1());
 }
 
 struct Player {
@@ -102,8 +112,6 @@ impl Game {
             let player = &mut self.players[who];
 
             player.roll(dicerolls[0], dicerolls[1], dicerolls[2]);
-            println!("p{} {:?} {}", who + 1, dicerolls, player.points);
-
 
             self.rolls += 3;
         }
@@ -153,7 +161,6 @@ fn test_part_1() {
     };
     game.play();
 
-    println!("{:?}", game.players.iter().map(|p| p.points).collect::<Vec<u64>>());
     assert_eq!(game.rolls, 993);
     assert_eq!(game.part_1(), 739785);
 }
